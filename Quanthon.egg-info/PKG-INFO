@@ -1,0 +1,37 @@
+Metadata-Version: 2.1
+Name: Quanthon
+Version: 0.1.0
+Summary: A quantum computing library
+Home-page: https://quanthon.readthedocs.io/
+Author: Keran Chen
+Author-email: keranc@uio.no
+License: MIT
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+
+# Quanthon
+
+A minimal Python library for quantum computing.
+
+## Installation
+
+Using PIP:
+```sh
+pip3 install Quanthon
+```
+
+## Get Started
+
+Start!
