@@ -194,7 +194,9 @@ class Qubits(Qubits_2):
         return "".join(flipped_state)
     
     def cnot(self, control, target):
-
+        
+        if self.n_qubit == 1:
+            raise ValueError("The CNOT gate can not be applied to a single qubit.")
         self._get_state_dict()
         new_state_dict = self.state_dict.copy()
         # print(new_state_dict)
@@ -217,6 +219,8 @@ class Qubits(Qubits_2):
         
     def swap(self, qubit1, qubit2):
 
+        if self.n_qubit == 1:
+            raise ValueError("The SWAP gate can not be applied to a single qubit.")
         self._get_state_dict() 
         new_state_dict = self.state_dict.copy()
 
