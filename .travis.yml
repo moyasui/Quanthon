@@ -11,7 +11,7 @@ before_install:
 #   - pip3 install -r requirements.txt
 
 script:
-  - python -m unittest tests/quanthon_tests.py
+  - python -m unittest tests/quanthon_test.py
 
 deploy:
   provider: pypi
