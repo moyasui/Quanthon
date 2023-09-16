@@ -1,2 +1,3 @@
 .DS_Store
 makefile
+Quanthon/__pycache__/*
