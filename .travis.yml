@@ -1,6 +1,6 @@
 language: python
 python:
-  - 3.11
+  - 3.x
 
 # Update pip to the latest version
 before_install:
