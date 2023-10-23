@@ -1,6 +1,6 @@
 # Quanthon
 
-A minimal Python library for quantum computing.
+A minimal Python library for quantum computing, for physicists!
 
 ## Installation
 
