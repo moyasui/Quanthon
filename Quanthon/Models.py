@@ -17,7 +17,7 @@ class Model():
         
 
     def jordan_wigner(self):
-        
+        pass
     
     def other_mapper(self):
         raise NotImplementedError('Other mappers are not implemented yet.')
