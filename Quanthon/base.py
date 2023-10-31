@@ -13,12 +13,46 @@ class Qubit:
         self.state[0] = 1
         self.I = np.eye(2)
         self.H = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        self.X = np.array([[0, 1], [1, 0]])
-        self.Y = np.array([[0, -1j], [1j, 0]])
-        self.Z = np.array([[1, 0], [0, -1]])
-        self.S = np.array([[1, 0], [0, 1j]])
+        self.x = np.array([[0, 1], [1, 0]])
+        self.y = np.array([[0, -1j], [1j, 0]])
+        self.z = np.array([[1, 0], [0, -1]])
+        self.s = np.array([[1, 0], [0, 1j]])
         self.n_qubit = 1
         self._get_state_dict()
+        self._get_gate_history()
+
+
+    def _get_gate_history(self):
+        self.gate_history = {}
+        for i in range(self.n_qubit):
+            self.gate_history[f'{i}'] = []
+        # print(self.n_qubit)
+        # print(self.gate_history)
+    
+    def _update_gate_history(self, gate, i):
+        
+        if gate in ['H', 'X', 'Y', 'Z', 'Sdag', 'Rx', 'Ry']:
+            self.gate_history[f'{i}'].append(gate) 
+        
+        elif gate == 'CNOT':
+            self.gate_history[f'{i[0]}'].append(gate + f"ctrl{i[1]-i[0]}") 
+            self.gate_history[f'{i[1]}'].append(gate + "trgt")
+        
+        elif gate == 'SWAP':
+            self.gate_history[f'{i[0]}'].append(gate + f"1{i[1]-i[0]}")
+            self.gate_history[f'{i[1]}'].append(gate + "2")
+
+        else:
+            raise ValueError(f"Invalid gate {gate}")
+        
+        for j in range(self.n_qubit):
+            if isinstance(i, tuple):
+                if j not in i:
+                    self.gate_history[f'{j}'].append('I')
+            else:
+                if j != i:
+                    self.gate_history[f'{j}'].append('I')
+
 
     def __repr__(self) -> str:
         return f"Qubit(s) in state: \n {self._to_comp_basis()} \n"
@@ -66,31 +100,37 @@ class Qubit:
             result = np.kron(result, np.eye(2))
         
         self.state = result @ self.state
+    
 
     def hadamard(self,i):
         self.operate(self.H,i)
+        self._update_gate_history('H', i)
     
     def X(self,i):
-        self.operate(self.X, i)
+        self.operate(self.x, i)
+        self._update_gate_history('X', i)
 
-    # Define the Pauli Y operator
     def Y(self,i):
-        self.operate(self.Y, i)
+        self.operate(self.y, i)
+        self._update_gate_history('Y', i)
 
-    # Define the Pauli Z operator
     def Z(self,i):
-        self.operate(self.Z, i)
+        self.operate(self.z, i)
+        self._update_gate_history('Z', i)
     
     def sdag(self,i):
-        self.operate(self.S.conj(), i)
+        self.operate(self.s.conj(), i)
+        self._update_gate_history('Sdag', i)
 
     def rx(self, theta, i):
-        Rx = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.X 
+        Rx = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x 
         self.operate(Rx, i)
+        self._update_gate_history(f'Rx_{theta}', i)
 
     def ry(self, phi, i):
-        Ry = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.Y
+        Ry = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.y
         self.operate(Ry, i)
+        self._update_gate_history(f'Ry_{phi}', i)
 
     def prob(self):
         prob = np.abs(self.state**2)
@@ -122,6 +162,50 @@ class Qubit:
         return outcomes_count
         # return outcomes
     
+    def draw(self, use_quantikz=True):
+        print("cricuit")
+        if not use_quantikz:
+            raise NotImplementedError("This feature is not implemented yet.")
+        else:
+            gate_map = {
+                'H': '\\gate{H}',
+                'I': '\\qw',
+                'X': '\\gate{X}',
+                'Y': '\\gate{Y}',
+                'Z': '\\gate{Z}',
+                'Sdag': '\\gate{S^\\dagger}',
+                'CNOTctrl': lambda dist: "\\ctrl{" + f"{dist}" + '}',
+                'CNOTtrgt': '\\targ{}',
+                'SWAP1': lambda dist: "\\swap{" + f"{dist}" + '}',
+                'SWAP2': '\\targX{}',
+                # ... add other gates and their mappings as needed.
+            }
+
+            max_gate_length = max(len(gates) for gates in self.gate_history.values())
+            
+            quantikz_str = "\\begin{quantikz}\n"
+            
+            for qubit in range(self.n_qubit):
+                gates = self.gate_history.get(str(qubit), [])
+                quantikz_str += "\t\\lstick{$q_{" + f"{qubit}" + "}$} & "
+                for gate in gates:
+                    if gate.startswith('CNOTctrl'):
+                        # print(gate_map.get('CNOTctrl'))
+                        quantikz_str += gate_map.get('CNOTctrl')(gate[8:])+ " & "
+                    elif gate.startswith('SWAP1'):
+                        quantikz_str += gate_map.get('SWAP1')(gate[5:]) + " & "
+                    else:
+                        quantikz_str += gate_map.get(gate, gate) + " & "
+                quantikz_str += "\qw \\\\\n"
+            
+            # Fixing the positions of CNOT gates
+            # quantikz_str = quantikz_str.replace('\\ctrl & \\targ', '\\targ & \\ctrl')
+            
+            quantikz_str += "\\end{quantikz}"
+            
+            print(quantikz_str)
+
+        
 
 class Qubits_2(Qubit):
 
@@ -144,11 +228,13 @@ class Qubits_2(Qubit):
         self.swp = np.array([[1, 0, 0, 0], 
                               [0, 0, 1, 0], 
                               [0, 1, 0, 0], 
-                              [0, 0, 0, 1]])        
+                              [0, 0, 0, 1]])
+        self._get_gate_history()
 
     def copy(self):
         new_qubit = Qubits_2()
         new_qubit.state = self.state.copy()
+        new_qubit.n_qubit = self.n_qubit
         return new_qubit
 
     def cnot(self, i, j):
@@ -173,12 +259,13 @@ class Qubits(Qubits_2):
         self.n_qubit = n
         self._get_state_dict()
         # print(self.state_dict)
+        self._get_gate_history()
         
     
     def copy(self):
-        new_qubit = Qubits(self.n_qubit)
-        new_qubit.state = self.state.copy()
-        return new_qubit
+        new_qubits = Qubits(self.n_qubit)
+        new_qubits.state = self.state.copy()
+        return new_qubits
 
 
     def _find_flipped_state(self, target, state):
@@ -207,6 +294,7 @@ class Qubits(Qubits_2):
 
         # print(len(new_state_dict.values()))
         self.state = np.fromiter(new_state_dict.values(), dtype=np.complex_)
+        self._update_gate_history("CNOT", (control, target))
 
     def _find_swapped_state(self, i, j, state):
         swapped_state = list(state)
@@ -230,6 +318,20 @@ class Qubits(Qubits_2):
 
         # print(len(new_state_dict.values()))
         self.state = np.fromiter(new_state_dict.values(), dtype=np.complex_)
-        
+        self._update_gate_history("SWAP", (qubit1, qubit2))
     
+
+
+if __name__ == "__main__":
+    qc = Qubits(4)
+    print(qc.n_qubit)
+    print(qc)
+
+    qc.hadamard(0)
+    qc.X(1)
+    qc.cnot(1,0)
+    # qc.swap(0,1)
+    qc.Y(0)
     
+    print(qc.gate_history)
+    qc.draw(True)

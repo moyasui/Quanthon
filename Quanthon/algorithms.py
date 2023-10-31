@@ -1,7 +1,5 @@
 '''Doc:
-    VQE,
-    UCCVQE,
-    ADAPT-VQE'''
+    VQEs'''
 
 from scipy.optimize import minimize
 

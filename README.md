@@ -19,7 +19,7 @@ import Quanthon as qt
 
 ### Initializing a Single Qubit
 
-Initialize a single qubit by creating an instance of the `Qubit` class.
+Initialize a single qubit by creating an instance of the `Qubits` class.
 
 ```python
 qubit = qt.Qubits(1)

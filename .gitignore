@@ -1,3 +1,9 @@
 .DS_Store
 makefile
-Quanthon/__pycache__/*
+Quanthon/__pycache__
+tests/__pycache__
+*.pyc
+Quanthon.egg-info
+dist
+build
+-r *.pyc
