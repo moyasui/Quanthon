@@ -11,18 +11,6 @@ def get_all_pauli(n):
     return perms
 
 
-# def _get_single_rotations(op):
-    
-#     if op == 'X':
-#         return ('H')
-#     if op == 'Y':
-#         return ('Sdag'), ('H')
-#     if op == 'Z' or op == 'I':
-#         return ('I')
-#     else:
-#         raise ValueError(f'Invalid Pauli operator: {op}')
-
-
 def _no_pauli_after_i(pauli_str):
 
     detected_I = False
@@ -264,7 +252,3 @@ if __name__ == '__main__':
         qc_copy.draw()
 
     # testing eigenvalues
-
-    for op in hamiltonian:
-        # print(find_state_eigval(op))
-        pass
