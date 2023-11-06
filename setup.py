@@ -15,7 +15,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
 setup(
     name="Quanthon",
-    version="0.2.1",
+    version="0.2.2",
     description="A quantum computing library",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -31,9 +31,12 @@ class Qubit:
     
     def _update_gate_history(self, gate, i):
         
-        if gate in ['H', 'X', 'Y', 'Z', 'Sdag', 'Rx', 'Ry']:
+        if gate in ['H', 'X', 'Y', 'Z', 'Sdag']:
             self.gate_history[f'{i}'].append(gate) 
         
+        elif gate.startswith('Rx') or gate.startswith('Ry'):
+            self.gate_history[f'{i}'].append(gate)
+ 
         elif gate == 'CNOT':
             self.gate_history[f'{i[0]}'].append(gate + f"ctrl{i[1]-i[0]}") 
             self.gate_history[f'{i[1]}'].append(gate + "trgt")
@@ -173,12 +176,13 @@ class Qubit:
                 'X': '\\gate{X}',
                 'Y': '\\gate{Y}',
                 'Z': '\\gate{Z}',
+                'Rx': lambda angle: '\\gate{R_x(' + f"{angle}" + ')}',
+                'Rx': lambda angle: '\\gate{R_y(' + f"{angle}" + ')}',
                 'Sdag': '\\gate{S^\\dagger}',
                 'CNOTctrl': lambda dist: "\\ctrl{" + f"{dist}" + '}',
                 'CNOTtrgt': '\\targ{}',
                 'SWAP1': lambda dist: "\\swap{" + f"{dist}" + '}',
                 'SWAP2': '\\targX{}',
-                # ... add other gates and their mappings as needed.
             }
 
             max_gate_length = max(len(gates) for gates in self.gate_history.values())
@@ -188,12 +192,17 @@ class Qubit:
             for qubit in range(self.n_qubit):
                 gates = self.gate_history.get(str(qubit), [])
                 quantikz_str += "\t\\lstick{$q_{" + f"{qubit}" + "}$} & "
+                
                 for gate in gates:
                     if gate.startswith('CNOTctrl'):
                         # print(gate_map.get('CNOTctrl'))
                         quantikz_str += gate_map.get('CNOTctrl')(gate[8:])+ " & "
                     elif gate.startswith('SWAP1'):
                         quantikz_str += gate_map.get('SWAP1')(gate[5:]) + " & "
+                    elif gate.startswith('Rx'):
+                        quantikz_str += gate_map.get('Rx')(gate[3:]) + " & "
+                    elif gate.startswith('Ry'):
+                        quantikz_str += gate_map.get('Ry')(gate[3:]) + " & "
                     else:
                         quantikz_str += gate_map.get(gate, gate) + " & "
                 quantikz_str += "\qw \\\\\n"
@@ -332,6 +341,7 @@ if __name__ == "__main__":
     qc.cnot(1,0)
     # qc.swap(0,1)
     qc.Y(0)
+    qc.rx(0.4, 1)
     
     print(qc.gate_history)
     qc.draw(True)

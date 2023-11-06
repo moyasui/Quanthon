@@ -26,7 +26,7 @@ class VQE():
             if self.expectation is None:
                 energy = qc.state.conj() @ (self.H @ qc.state) # a bit cheating
             else:
-                energy = self.expectation(qc, self.lmb, self.num_shots)
+                energy = self.expectation(qc, self.num_shots)
             return energy
 
         def minimise_eigenvalue(self, hamiltonian, lmb, num_shots=10000):
