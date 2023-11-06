@@ -61,5 +61,6 @@ class QuanthonTest(unittest.TestCase):
 
         print("exact: ", exact_energy, "expectation: ", energy)
 
+
 if __name__ == '__main__':
     unittest.main()

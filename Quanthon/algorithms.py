@@ -23,13 +23,13 @@ class VQE():
         def _objective(self,params):
             qc = self.ansatz(params)
 
-            if self.expectation is None:
-                energy = qc.state.conj() @ (self.H @ qc.state) # a bit cheating
-            else:
-                energy = self.expectation(qc, self.num_shots)
+            # if self.expectation is None:
+            #     energy = qc.state.conj() @ (self.H @ qc.state) # removed
+
+            energy = self.expectation(qc, self.H, self.num_shots)
             return energy
 
-        def minimise_eigenvalue(self, hamiltonian, lmb, num_shots=10000):
+        def minimise_eigenvalue(self, H_pauli_str, num_shots=10000):
             '''
             Rotates the parametrised circuit to find the minimised energy using classical 
             minimisation algorithms.
@@ -37,8 +37,8 @@ class VQE():
             hamiltonian: a parametrised circuit that takes theta and phi, do not depend on lambda,
             num_shots: (int) number of shots,
             return: (float) minimised energy eigenvalues.'''
-            self.H = hamiltonian
-            self.lmb = lmb
+            self.H = H_pauli_str
+
             self.num_shots = num_shots
             result = self.minimize(self._objective, self.init_points, method='Powell', options= {"maxiter": 10000})
             min_params = result.x

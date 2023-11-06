@@ -154,20 +154,19 @@ def expectation(qc, pauli_ops, n_shots=10000):
     expectation = 0
     for pauli_str, coeff in pauli_ops:
 
-        print(pauli_str,coeff)
         # state_eigval = find_state_eigval(pauli_str[::-1])
         # state_eigval = find_state_eigval(pauli_str)
         state_eigval = np.ones(len(qc.state))
         state_eigval[int(0.5*len(qc.state)):] *= -1
-        print(state_eigval)
+        # print(state_eigval)
         qc_copy = qc.copy()
         cb_ops = change_basis(pauli_str)
-        print(cb_ops)
+        # print(cb_ops)
 
         rotate_basis(qc_copy, cb_ops)
 
         counts = qc_copy.measure(n_shots)[:, 0]
-        print("this count", counts)
+        # print("this count", counts)
         expectation += coeff * np.sum(counts * state_eigval) / n_shots
     
     # print(cb_ops)
