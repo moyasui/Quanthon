@@ -7,3 +7,5 @@ Quanthon.egg-info
 dist
 build
 
+Quanthon/test.ipynb
+Quanthon/test_new_base.py

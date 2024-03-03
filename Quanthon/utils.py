@@ -23,7 +23,7 @@ def get_pauli(basis_name):
 
 def pauli_sum(lst):
     """
-    Computes the Pauli sum of a list of Pauli operators.
+    Computes the Pauli sum of a list of Pauli operators. Returns the matrix.
     """
     result = 0+0j
     for item in lst:
@@ -76,22 +76,59 @@ def entropy(H, level=0):
     return entropy_A, entropy_B
 
 
+def sum_of_pow_2(a, b):
+    '''generate a sequence of sums of powers of 2 from a to b'''
 
-# def is_basis_combination(basis):
-#     pattern = r"^[IXZY]+$"
-#     match = re.match(pattern, basis)
-#     return bool(match)
+    return sum([2**i for i in range(a, b+1)])
 
-# def change_basis(qc, basis):
+def one_fixed_bit(n,c, is_decimal=False):
+    '''generate the bit string of length n such that the cth bit is always 1'''
 
-#     if not is_basis_combination(basis):
-#         raise ValueError(f"Invalid basis: {basis}")
-         
+    all_combi = []
+    for i in range(n-c):
+        all_combi.append(np.arange(sum_of_pow_2(c, c+i), 2**(c+i+1 )))
+    
+    all_combi = np.concatenate(all_combi)
+
+    if is_decimal:
+        return all_combi
+    
+    bit_strings = []
+    for i in all_combi.flatten():
+        bit_string = f'{i:0{n}b}'
+        bit_strings.append(bit_string)
+
+    return bit_strings
+
+def flip_bit(i, t):
+    '''flip the t'th bit of the binary representation of i'''
+
+    return i ^ (1 << t)
 
 
+def swap_bits(val, i, j): # https://stackoverflow.com/questions/12173774/how-to-modify-bits-in-an-integer
+    """
+    Given an integer val, swap bits in positions i and j if they differ
+    by flipping their values, i.e, select the bits to flip with a mask.
+    Since v ^ 1 = 0 when v = 1 and 1 when v = 0, perform the flip using an XOR.
+    """
+    if (val >> i) & 1 != (val >> j) & 1:
+        mask = (1 << i) | (1 << j)
+        val ^= mask
+
+    return val
+
+
+
+    
 if __name__ == "__main__":
     # Test Pauli operators
     pauli_ops = [('IZZZ', 3), ('ZXYI', 2)]
     a = pauli_sum(pauli_ops)
     
-    print(a)
+    n = 78
+    t = 0
+    fn = flip_bit(n, t)
+    sn = swap_bits(4, 0, 1)
+    print(f'Flipping the {t}th bit of {n} gives {fn}')
+    print(f'Swapping the {0}th bit and the {1} bit of {4} gives {sn}')
