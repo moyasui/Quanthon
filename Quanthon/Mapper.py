@@ -38,11 +38,11 @@ def jordan_wigner(hamiltonian):
                 h_pauli_str_with_coeff.append(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I', 0.25 * hamiltonian.one_body_coeffs[i, j]))
                 h_pauli_str_with_coeff.append(((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I', 0.25j * hamiltonian.one_body_coeffs[i, j]))
 
-                print(i, j)
-                print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
-                print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
-                print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
-                print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
+                # print(i, j)
+                # print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
+                # print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
+                # print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
+                # print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
                 
 
     # two body
@@ -58,7 +58,7 @@ def jordan_wigner(hamiltonian):
                     if hamiltonian.two_body_coeffs[p, q, r, s] == 0:
                         continue
                     
-                    if p == r and q == s:
+                    if (p == r and q == s) or (p == s and q == r):
                         
                         # i,j,k,l = sorted([p,q,r,s])
                         # h_pauli_str_with_coeff.append((n*'I', 0.25 * hamiltonian.two_body_coeffs[p, q, r, s]))
@@ -132,23 +132,25 @@ def jordan_wigner(hamiltonian):
                         op = ((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (k-1-j)*'I' + 'X' + (l-1-k)*'Z' +'Y' + (n-l-1)*'I')
                         h_pauli_str_with_coeff.append((op, -0.125 * hamiltonian.two_body_coeffs[p, q, r, s]))
 
-                        if len(op) != n:
-                            print('pqrs',p,q,r,s)
-                            print('ijkl',i,j,k,l)
-                            print(op)
+                        # if len(op) != n:
+                        #     print('pqrs',p,q,r,s)
+                        #     print('ijkl',i,j,k,l)
+                        #     print(op)
                         
                 
-    print("unhealthy terms", _check_health_jw(h_pauli_str_with_coeff, n))
+    if not _check_health_jw(h_pauli_str_with_coeff, n):
+        raise ValueError("There are terms whose length is not equal to the number of qubits.")
     return h_pauli_str_with_coeff
 
 def _check_health_jw(h_pauli_str_with_coeff, n):
     count = 0
     for term in h_pauli_str_with_coeff:
         if len(term[0]) != n:
-            # print(term)
             count += 1
     
     return count
+    
+
 
 def simplify_pauli_terms(terms):
     """
@@ -185,10 +187,12 @@ if __name__ == '__main__':
     h_ijkl = np.zeros((2, 2, 2, 2))  # Initialize two-body terms matrix
     h_ijkl[0, 1, 0, 1] = 0.5  
     test = Hamiltonian(h_ij, h_ijkl)
-    n = 3
+    n = 4
     test = Hamiltonian(np.ones((n,n)), np.ones((n,n,n,n)))
     jw_test = jordan_wigner(test)
-    print(jw_test)
+    print("total terms", len(jw_test))
+    # print(jw_test)
 
-    # sim_jw_test = simplify_pauli_terms(jw_test)
-    # print(sim_jw_test)
+    sim_jw_test = simplify_pauli_terms(jw_test)
+    print(sim_jw_test)
+    print("total terms after simplification", len(sim_jw_test))

@@ -10,12 +10,12 @@ class QuanthonTest(unittest.TestCase):
         # print(q1)
     
     def test_qubit2(self):
-        q2 = qt.Qubits_2()
+        q2 = qt.Qubits(2)
         # print(q2)
         q2.hadamard(0)
-        q2.cnot(0,1)
+        q2.CNOT(0,1)
         # print(q2)
-        q2.swap(1,0)
+        q2.SWAP(1,0)
         # print(q2)
     
     def test_qubits(self):
@@ -23,13 +23,13 @@ class QuanthonTest(unittest.TestCase):
         print("Testing `Qubits`")
         q1 = qt.Qubits(1)
         try:
-            if q1.cnot(0,1):
+            if q1.CNOT(0,1):
                 raise Exception("CNOT checks not working properly.")
         except (ValueError, IndexError):
             print("CNOT safe")
         
         try:
-            if q1.swap(0,1):
+            if q1.SWAP(0,1):
                 raise Exception("SWAP checks not working properly.")
         except (ValueError, IndexError):
             print("SWAP safe")

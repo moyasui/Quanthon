@@ -1,6 +1,6 @@
 from itertools import product
 import numpy as np
-from Quanthon import Qubits
+from new_base import Qubits
 
 def get_all_pauli(n):
 
@@ -25,10 +25,10 @@ def _no_pauli_after_i(pauli_str):
             return False
     return True
 
-def get_swaps(pauli_str, swap_list):
+def get_SWAPs(pauli_str, SWAP_list):
 
     if _no_pauli_after_i(pauli_str):
-        return ''.join(pauli_str), swap_list
+        return ''.join(pauli_str), SWAP_list
 
     found_I = False
     pauli_str = list(pauli_str)
@@ -42,23 +42,23 @@ def get_swaps(pauli_str, swap_list):
                 non_i_indx = i
             pauli_str[I_indx] = op 
             pauli_str[non_i_indx]= 'I'
-            swap_list.append((I_indx, non_i_indx))
+            SWAP_list.append((I_indx, non_i_indx))
             found_I = False
 
-    return get_swaps(pauli_str, swap_list)
+    return get_SWAPs(pauli_str, SWAP_list)
 
-def get_cnots(pauli_str): 
+def get_CNOTs(pauli_str): 
 
     if not _no_pauli_after_i:
         raise ValueError('Pauli string must not have any Pauli operator after I.')
-    cnot_pairs = []
+    CNOT_pairs = []
 
     for i in range(len(pauli_str)-1):
         if pauli_str[i+1] == 'I':
             break
-        cnot_pairs.append((i+1, i))
+        CNOT_pairs.append((i+1, i))
         
-    return cnot_pairs
+    return CNOT_pairs
 
 def change_basis(pauli_str):
 
@@ -66,13 +66,13 @@ def change_basis(pauli_str):
         if i not in 'IXYZ':
             raise ValueError(f'Invalid Pauli operator: {i}')
 
-    swaped_pauli, swaps = get_swaps(pauli_str, [])
-    cnot_pairs = get_cnots(swaped_pauli)
+    SWAPed_pauli, SWAPs = get_SWAPs(pauli_str, [])
+    CNOT_pairs = get_CNOTs(SWAPed_pauli)
 
     change_basis_op = []
 
-    for pair in swaps:
-        change_basis_op.append(('swap', pair))
+    for pair in SWAPs:
+        change_basis_op.append(('SWAP', pair))
     
 
     for i, op in enumerate(pauli_str):
@@ -85,8 +85,8 @@ def change_basis(pauli_str):
             change_basis_op.append(('I', i))
  
     
-    for pair in cnot_pairs:
-        change_basis_op.append(('cnot', pair))
+    for pair in CNOT_pairs:
+        change_basis_op.append(('CNOT', pair))
     
     return change_basis_op
 
@@ -94,10 +94,10 @@ def rotate_basis(qc, ops):
     '''rotate to the measurement basis'''
     
     for op_type, idx in ops:
-        if op_type == 'cnot':
-            qc.cnot(idx[0], idx[1])
-        elif op_type == 'swap':
-            qc.swap(idx[0], idx[1])
+        if op_type == 'CNOT':
+            qc.CNOT(idx[0], idx[1])
+        elif op_type == 'SWAP':
+            qc.SWAP(idx[0], idx[1])
         elif op_type == 'X':
             qc.X(idx)
         elif op_type == 'Y':
@@ -105,13 +105,15 @@ def rotate_basis(qc, ops):
         elif op_type == 'Z':
             qc.Z(idx)
         elif op_type == 'H':
-            qc.hadamard(idx)
+            qc.H(idx)
         elif op_type == 'Sdag':
             qc.sdag(idx)
         elif op_type == 'I':
             continue
         else:
             raise ValueError(f'Invalid operator: {op_type}')
+    
+    qc.run()
     
 
 def find_state_eigval(pauli_str):
@@ -149,6 +151,8 @@ def expectation(qc, pauli_ops, n_shots=10000):
     '''
     return:
         the expectation value
+    args:
+        qc: the circuit to be measured in
     '''
 
     expectation = 0
@@ -157,7 +161,7 @@ def expectation(qc, pauli_ops, n_shots=10000):
         # state_eigval = find_state_eigval(pauli_str[::-1])
         # state_eigval = find_state_eigval(pauli_str)
         state_eigval = np.ones(len(qc.state))
-        state_eigval[int(0.5*len(qc.state)):] *= -1
+        state_eigval[int(0.5*len(qc.state)):] *= -1 # first half of state has eigenvalue 1 and the second half -1
         # print(state_eigval)
         qc_copy = qc.copy()
         cb_ops = change_basis(pauli_str)
@@ -194,23 +198,23 @@ if __name__ == '__main__':
 
     # PASSED
 
-    # test get_swaps
+    # test get_SWAPs
     
     # for i in [a, b, c, d]:
-    #     result, swaps = get_swaps(i, [])
+    #     result, SWAPs = get_SWAPs(i, [])
     #     result = "".join(result)
-    #     print(result, swaps)
+    #     print(result, SWAPs)
     
     # PASSED
 
-    # test get_cnots
+    # test get_CNOTs
 
     # for paulis in [a, b, c, d]:
-    #     result, swaps = get_swaps(paulis, [])
+    #     result, SWAPs = get_SWAPs(paulis, [])
     #     result = "".join(result) 
     #     print(result)
-    #     cnot_pairs = get_cnots(result)
-    #     print(f"cnots: {paulis}", cnot_pairs)
+    #     CNOT_pairs = get_CNOTs(result)
+    #     print(f"CNOTs: {paulis}", CNOT_pairs)
 
     # PASSED
 
@@ -250,4 +254,4 @@ if __name__ == '__main__':
         print(qc_copy.gate_history)
         qc_copy.draw()
 
-    # testing eigenvalues
+    # testing eigenvalue
