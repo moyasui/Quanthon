@@ -31,7 +31,7 @@ qubit = qt.Qubits(1)
 
 ```python
 # Apply a Hadamard gate on the first qubit
-qubit.hadamard(0)
+qubit.H(0)
 
 # Apply a Pauli-X gate on the first qubit
 qubit.X(0)
@@ -59,20 +59,40 @@ Use the `Qubits` class for all states.
 from Quanthon import Qubits
 
 # Initialize a 2-qubit system
-two_qubits = Qubits_2()
+two_qubits = Qubits(2)
 
 # Initialize an n-qubit system
-n_qubits = Qubits(3)
+n = 4
+n_qubits = Qubits(n)
 ```
 
-### CNOT and Swap Operations for Multiple Qubits
+### CNOT and SWAP Operations for Multiple Qubits
 
 `Quanthon` allows you to perform CNOT and SWAP operations on multi-qubit systems.
 
 ```python
 # Perform a CNOT operation between the first and second qubit
-two_qubits.cnot(0, 1)
+two_qubits.CONT(0, 1)
 
-two_qubits.swap(0, 1)
+two_qubits.SWAP(0, 1)
+```
+
+
+## NEW IN VERSION 0.3:
+- You must now use Qubits.run() to execute the circuit after applying the gates.
+    
+```python
+qc = Qubits(4)
+qc.H(0)
+```
+
+- Hadamard gates are now called *Qubits.H(i)* in order to be consistent.
+Old:
+```python
+qc.Hadamard(0)
+```
+New:
+```python
+qc.H(0)
 ```
 

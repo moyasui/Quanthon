@@ -1,27 +1,31 @@
 import unittest
 # from Quanthon import Qubit, Qubits_2, Qubits
 import Quanthon as qt
+import numpy as np
 
 class QuanthonTest(unittest.TestCase):
-    def test_qubit(self):
-        q1 = qt.Qubit()
-        # print(q1)
-        q1.hadamard(0)
-        # print(q1)
-    
-    def test_qubit2(self):
-        q2 = qt.Qubits(2)
-        # print(q2)
-        q2.hadamard(0)
-        q2.CNOT(0,1)
-        # print(q2)
-        q2.SWAP(1,0)
-        # print(q2)
+
+    def test_Hamiltonian(self):
+
+        print("Testing `Hamiltonian`")
+
+        test_ham = qt.Hamiltonian(np.ones((2,2)), np.ones((2,2,2,2)))
+        test_jw = qt.jordan_wigner(test_ham)
+        print(test_jw)
+
+
     
     def test_qubits(self):
 
+        q2 = qt.Qubits(2)
+        # print(q2)
+        q2.H(0)
+        q2.CNOT(0,1)
+        # print(q2)
+
         print("Testing `Qubits`")
         q1 = qt.Qubits(1)
+
         try:
             if q1.CNOT(0,1):
                 raise Exception("CNOT checks not working properly.")
@@ -41,9 +45,8 @@ class QuanthonTest(unittest.TestCase):
         print("Testing `expectation`")
         qc = qt.Qubits(4)
 
-        qc.hadamard(0)
-        # qc.cnot(0,1)
-        # qc.cnot(0,2)
+        qc.H(0)
+
        
 
         H = [

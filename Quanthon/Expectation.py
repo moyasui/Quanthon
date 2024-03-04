@@ -1,6 +1,6 @@
 from itertools import product
 import numpy as np
-from new_base import Qubits
+from Quanthon.new_base import Qubits
 
 def get_all_pauli(n):
 

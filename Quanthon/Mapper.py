@@ -47,7 +47,7 @@ def jordan_wigner(hamiltonian):
 
     # two body
                 
-    print("unhealthy terms after one body", _check_health_jw(h_pauli_str_with_coeff, n))
+    # print("unhealthy terms after one body", _check_health_jw(h_pauli_str_with_coeff, n))
     # return h_pauli_str_with_coeff
 
     for p in range(n):
@@ -137,9 +137,11 @@ def jordan_wigner(hamiltonian):
                         #     print('ijkl',i,j,k,l)
                         #     print(op)
                         
-                
-    if not _check_health_jw(h_pauli_str_with_coeff, n):
+    
+    if _check_health_jw(h_pauli_str_with_coeff, n):
         raise ValueError("There are terms whose length is not equal to the number of qubits.")
+    
+    h_pauli_str_with_coeff = _simplify_pauli_terms(h_pauli_str_with_coeff)
     return h_pauli_str_with_coeff
 
 def _check_health_jw(h_pauli_str_with_coeff, n):
@@ -152,28 +154,16 @@ def _check_health_jw(h_pauli_str_with_coeff, n):
     
 
 
-def simplify_pauli_terms(terms):
-    """
-    Simplify a list of Pauli terms by summing coefficients of identical Pauli strings.
-    
-    Parameters:
-    - terms (list of tuples): The input list where each tuple contains a Pauli string and its coefficient.
-    
-    Returns:
-    - list of tuples: Simplified list with unique Pauli strings and summed coefficients.
-    """
-    # Initialize a dictionary to hold the simplified terms
+def _simplify_pauli_terms(terms):
+
     simplified_terms = {}
     
-    # Loop through each term in the input list
     for pauli_string, coeff in terms:
-        # Sum the coefficients for identical Pauli strings
         if pauli_string in simplified_terms:
             simplified_terms[pauli_string] += coeff
         else:
             simplified_terms[pauli_string] = coeff
     
-    # Convert the dictionary back to a list of tuples
     simplified_terms_list = [(pauli_string, coeff) for pauli_string, coeff in simplified_terms.items()]
     
     return simplified_terms_list
@@ -192,7 +182,3 @@ if __name__ == '__main__':
     jw_test = jordan_wigner(test)
     print("total terms", len(jw_test))
     # print(jw_test)
-
-    sim_jw_test = simplify_pauli_terms(jw_test)
-    print(sim_jw_test)
-    print("total terms after simplification", len(sim_jw_test))

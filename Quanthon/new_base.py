@@ -1,6 +1,6 @@
 import numpy as np
 from collections import Counter
-from utils import one_fixed_bit, flip_bit, swap_bits
+from Quanthon.utils import one_fixed_bit, flip_bit, swap_bits
 
 # Constants
 rng = np.random.default_rng()

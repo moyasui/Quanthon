@@ -13,9 +13,14 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # This call to setup() does all the work
+    
+#### VERSION HERE #####
+version = "0.3.3" #####
+#######################    
+
 setup(
     name="Quanthon",
-    version="0.3.0",
+    version=version,
     description="A quantum computing library",
     long_description=long_description,
     long_description_content_type="text/markdown",
