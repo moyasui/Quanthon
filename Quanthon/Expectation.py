@@ -1,6 +1,6 @@
 from itertools import product
 import numpy as np
-from Quanthon.new_base import Qubits
+
 
 def get_all_pauli(n):
 
@@ -32,6 +32,7 @@ def get_SWAPs(pauli_str, SWAP_list):
 
     found_I = False
     pauli_str = list(pauli_str)
+    non_i_indx = None
     for i, op in enumerate(pauli_str):
         if op == 'I':
             found_I = True
@@ -74,8 +75,8 @@ def change_basis(pauli_str):
     for pair in SWAPs:
         change_basis_op.append(('SWAP', pair))
     
-
-    for i, op in enumerate(pauli_str):
+    print(SWAPed_pauli)
+    for i, op in enumerate(SWAPed_pauli):
         if op == 'X':
             change_basis_op.append(('H', i))
         elif op == 'Y':
@@ -85,7 +86,7 @@ def change_basis(pauli_str):
             change_basis_op.append(('I', i))
  
     
-    for pair in CNOT_pairs:
+    for pair in reversed(CNOT_pairs):
         change_basis_op.append(('CNOT', pair))
     
     return change_basis_op
@@ -93,6 +94,8 @@ def change_basis(pauli_str):
 def rotate_basis(qc, ops):
     '''rotate to the measurement basis'''
     
+    # print("bc", sum(qc.state**2))
+
     for op_type, idx in ops:
         if op_type == 'CNOT':
             qc.CNOT(idx[0], idx[1])
@@ -114,36 +117,16 @@ def rotate_basis(qc, ops):
             raise ValueError(f'Invalid operator: {op_type}')
     
     qc.run()
+    # print([(gate.name, gate.n_qubits) for gate in qc.circuit])
+    # print('ops', ops)
+    # print([gate.name for gate in qc.circuit])
+    # for gate in qc.circuit:
+    #     qc.state = gate.act(qc.state)
+        # print(gate.name)
+        # print(qc.state)
+        # print(qc.state**2)
+        # print(sum(qc.state**2))
     
-
-def find_state_eigval(pauli_str):
-
-    eigenvalues = {
-        'I': [1, 1],
-        'X': [1, -1],
-        'Y': [1, -1],
-        'Z': [1, -1]
-    }
-
-    n_qubits = len(pauli_str)
-    
-    # Calculate total number of states
-    num_states = 2**n_qubits
-    state_eigenvalues = []
-
-    for state_num in range(num_states):
-        state_str = format(state_num, f'0{n_qubits}b')  # Convert to binary string
-        eigenvalue = 1  # Initialize eigenvalue
-        
-        # Iterate over each qubit in the state
-        for i in range(n_qubits):
-            pauli_op = pauli_str[i]  # Corresponding Pauli operator
-            qubit_val = int(state_str[i])  # Value of the qubit (0 or 1)
-            eigenvalue *= eigenvalues[pauli_op][qubit_val]  # Update eigenvalue for this qubit
-        
-        state_eigenvalues.append(eigenvalue)
-    
-    return np.array(state_eigenvalues)
     
     
 def expectation(qc, pauli_ops, n_shots=10000):
@@ -157,20 +140,24 @@ def expectation(qc, pauli_ops, n_shots=10000):
 
     expectation = 0
     for pauli_str, coeff in pauli_ops:
-
-        # state_eigval = find_state_eigval(pauli_str[::-1])
-        # state_eigval = find_state_eigval(pauli_str)
+        
+        if pauli_str == 'IIII':
+            expectation += coeff
+            continue
+        print(pauli_str, coeff)
         state_eigval = np.ones(len(qc.state))
         state_eigval[int(0.5*len(qc.state)):] *= -1 # first half of state has eigenvalue 1 and the second half -1
         # print(state_eigval)
         qc_copy = qc.copy()
         cb_ops = change_basis(pauli_str)
-        # print(cb_ops)
+        print(cb_ops)
 
         rotate_basis(qc_copy, cb_ops)
 
+        # print(qc_copy)
         counts = qc_copy.measure(n_shots)[:, 0]
         # print("this count", counts)
+        # print(counts)
         expectation += coeff * np.sum(counts * state_eigval) / n_shots
     
     # print(cb_ops)
@@ -189,12 +176,12 @@ if __name__ == '__main__':
     a = 'X'
     b = 'Y'
     c = 'IZ'
-    d = 'ZXZZ'
+    d = 'ZIXX'
     # test no_op_after_i
     
-    # print(no_pauli_after_i(a), no_pauli_after_i(b), no_pauli_after_i(c))
+    # print(_no_pauli_after_i(a), _no_pauli_after_i(b), _no_pauli_after_i(c))
 
-    # print(no_pauli_after_i(d))
+    # print(_no_pauli_after_i(d))
 
     # PASSED
 
@@ -233,25 +220,77 @@ if __name__ == '__main__':
     # c = 'ZIII'
     # d = 'XIXI'
 
-    b = 'XX'
-    c = 'YY'
-    d = 'IZ'
+    # b = 'XX'
+    # c = 'YY'
+    # d = 'IZ'
+    # e = 'XY'
 
     # testing drawing, seems ok
 
-    qc = Qubits(2)
-    hamiltonian = [b]
-    # coeffs = {b:0.5 , c:0.5 , d:0.5}
+    # qc = Qubits(2)
+    # qc.H(0)
+    # qc.CNOT(0,1)
+    # qc.run()
+    # # print(qc)
 
-    # print(f"hamiltonian: {hamiltonian}")
+    # hamiltonian_str = [b, c, e]
+    # coeffs = {b:0.5 , c:0.5 , d:0.5, e:3}
+    # ham = [(op, coeffs[op]) for op in hamiltonian_str]
+    
+    # # print(ham)
 
-    for term in hamiltonian:
+    # print(f"hamiltonian: {hamiltonian_str}")
+
+
+    # # print(ham_mat)
+    # # for term in hamiltonian:
         
-        qc_copy = qc.copy()
-        ops = change_basis(term)
-        rotate_basis(qc_copy, ops)
-        print(ops)
-        print(qc_copy.gate_history)
-        qc_copy.draw()
+    # #     qc_copy = qc.copy()
+    # #     print(qc_copy)
+    # #     ops = change_basis(term)
+    # #     rotate_basis(qc_copy, ops)
+    # #     print(ops)
+    # #     print(qc_copy.gate_history)
+    # #     qc_copy.draw()
 
-    # testing eigenvalue
+    # # testing expectation
+    
+    # for term in hamiltonian_str:
+        
+    #     qc_copy = qc.copy()
+    #     # print(qc_copy)
+    #     ops = change_basis(term)
+    #     rotate_basis(qc_copy, ops)
+    #     # print(ops)
+    
+    # estimated_energy = expectation(qc_copy, ham, n_shots=100000)
+    # print(estimated_energy)
+
+    # from Quanthon import pauli_sum
+    # # ham_mat = pauli_sum(ham)
+    # # real_energy = qc.state.conj() @ ham_mat @ qc.state
+    # # print(real_energy.real)
+
+    # # Testing expectation 2
+
+    # qc = Qubits(4)
+    # qc.H(0)
+    # qc.CNOT(0,1)
+    # qc.CNOT(1,2)
+    # qc.CNOT(2,3)
+    # qc.run()
+    # Ham = [
+    #     # ('ZIZI', (1)),
+    #     ('ZZXX', (0.5)), 
+    #     # ('YYII', (1)),
+    #     # ('IXIX', (0.5))
+    #     ]
+
+    # H_mat = pauli_sum(Ham)
+    # ee = expectation(qc, Ham, n_shots=100000)
+    # re = qc.state.conj().T @ H_mat @ qc.state
+
+    # print("exact: ", re, "expectation: ", ee)
+ 
+
+

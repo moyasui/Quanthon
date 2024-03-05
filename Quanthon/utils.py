@@ -81,27 +81,39 @@ def sum_of_pow_2(a, b):
 
     return sum([2**i for i in range(a, b+1)])
 
-def one_fixed_bit(n,c, is_decimal=False):
-    '''generate the bit string of length n such that the cth bit is always 1'''
+def one_fixed_bit(n,c,is_decimal=False):
+    '''generate the bit string of length n such that the cth bit is always 1.
 
-    all_combi = []
-    for i in range(n-c):
-        all_combi.append(np.arange(sum_of_pow_2(c, c+i), 2**(c+i+1 )))
+    args:
+        n: int, length of the bit string.
+        c: the index of the bit to be fixed to 1
+        
+    return:
+        combinations: string, list of all the bit stirngs of length n whose cth bit is 1.
     
-    all_combi = np.concatenate(all_combi)
+    N.B. 
+        to convert to int, specify int(bit_sting, 2) for binary input.'''
 
-    if is_decimal:
-        return all_combi
-    
-    bit_strings = []
-    for i in all_combi.flatten():
+    combinations = []
+    for i in range(2 ** n):
         bit_string = f'{i:0{n}b}'
-        bit_strings.append(bit_string)
+        if bit_string[n-c-1] == '1': # careful '1' is not 1
+            if is_decimal:
+                combinations.append(i)
+            else:
+                combinations.append(bit_string)
 
-    return bit_strings
+    return combinations
 
 def flip_bit(i, t):
-    '''flip the t'th bit of the binary representation of i'''
+    '''flip the t'th bit of the binary representation of i.
+    args: 
+        i: int
+        t: int
+    
+    return:
+        int, the new integer after flipping the t'th bit.
+    '''
 
     return i ^ (1 << t)
 
@@ -128,7 +140,24 @@ if __name__ == "__main__":
     
     n = 78
     t = 0
-    fn = flip_bit(n, t)
-    sn = swap_bits(4, 0, 1)
-    print(f'Flipping the {t}th bit of {n} gives {fn}')
-    print(f'Swapping the {0}th bit and the {1} bit of {4} gives {sn}')
+    # fn = flip_bit(n, t)
+    # sn = swap_bits(4, 0, 1)
+    # print(f'Flipping the {t}th bit of {n} gives {fn}')
+    # print(f'Swapping the {0}th bit and the {1} bit of {4} gives {sn}')
+
+    c = 2
+    n = 8
+    a = one_fixed_bit(n, c, False)
+    for i in a:
+        print("i:",i)
+        if i[n-c-1] != '1':
+            raise Exception('WRONG')
+        
+        i = int(i, 2)
+        flipped_i = flip_bit(int(i), c) 
+        print(f'{flipped_i:0{n}b}')
+        if f'{flipped_i:0{n}b}'[-(c+1)] != '0':
+            raise Exception('WRONG')
+
+
+

@@ -6,8 +6,8 @@ import numpy as np
 from scipy.linalg import expm
 
 
-from Quanthon.new_base import Qubits, Gate
-from Quanthon.utils import pauli_sum
+from .new_base import Qubits, Gate
+from .utils import pauli_sum
 
 
 

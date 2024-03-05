@@ -5,9 +5,9 @@
 from scipy.optimize import minimize
 import numpy as np
 import warnings
-from Quanthon.Ansatz import HardwareEfficietnAnsatz, QubitAdaptAnsatz
-from Quanthon.Expectation import expectation
-from Quanthon.utils import pauli_sum
+from .Ansatz import HardwareEfficietnAnsatz, QubitAdaptAnsatz
+from .Expectation import expectation
+from .utils import pauli_sum
 
 class VQE():
         def __init__(self, ansatz, init_points, optimiser=None):

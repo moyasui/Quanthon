@@ -1,6 +1,6 @@
 import numpy as np
 from collections import Counter
-from Quanthon.utils import one_fixed_bit, flip_bit, swap_bits
+from .utils import one_fixed_bit, flip_bit, swap_bits
 
 # Constants
 rng = np.random.default_rng()
@@ -21,6 +21,13 @@ class Gate:
 
         self.n_qubits = n_qubits
         self.params = params
+
+        if params:
+            try:
+                self.matrix(params)
+            except:
+                raise ValueError(f"Invalid matrix function or parameters.")
+
 
     def __repr__(self):
         return f"Gate: {self.name} \n Matrix: \n {self.matrix} \n"
@@ -236,6 +243,8 @@ class Qubits:
         for gate in self.circuit:
             self.state = gate.act(self.state)
         
+        self.circuit = [] # DO I DO THIS?
+        
 
     def prob(self):
         prob = np.abs(self.state**2)
@@ -320,10 +329,12 @@ class Qubits:
 if __name__ == "__main__":
     qc = Qubits(4)
     qc.H(1)
-    
-    qc.CNOT(1,2)
+    qc.H(0)
 
-    qc.SWAP(0,1)
+    qc.CNOT(0,1)
+    qc.CNOT(1,2)
+    qc.CNOT(2,3)
+
 
     qc.run()
     # print(qc)
@@ -332,8 +343,8 @@ if __name__ == "__main__":
     # qc.Y(0)
     # qc.rx(0.4, 1)
     
-    qc.rx(-1.2080928149562626, 1)
-    print(qc.gate_history)
-    qc.draw(True)
+    # qc.rx(-1.2080928149562626, 1)
+    # print(qc.gate_history)
+    # qc.draw(True)
 
     print(qc)

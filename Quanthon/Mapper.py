@@ -1,6 +1,6 @@
 import numpy as np
 
-class Hamiltonian():
+class Hamiltonian:
 
     def __init__(self, ob_coeffs, tb_coeffs) -> None:
         '''
