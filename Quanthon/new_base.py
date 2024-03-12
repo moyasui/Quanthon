@@ -104,6 +104,9 @@ class Qubits:
     def reinit_state(self):
         self.state = np.zeros(2**self.n_qubit, dtype=np.complex_)
         self.state[0] = 1
+    
+    def reset_circuit(self):
+        self.circuit = []
 
     def copy(self):
         new_qubits = Qubits(self.n_qubit)
@@ -241,10 +244,7 @@ class Qubits:
         
         '''Execute the circuit.'''
         for gate in self.circuit:
-            self.state = gate.act(self.state)
-        
-        self.circuit = [] # DO I DO THIS?
-        
+            self.state = gate.act(self.state)       
 
     def prob(self):
         prob = np.abs(self.state**2)

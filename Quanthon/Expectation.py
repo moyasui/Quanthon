@@ -75,7 +75,7 @@ def change_basis(pauli_str):
     for pair in SWAPs:
         change_basis_op.append(('SWAP', pair))
     
-    print(SWAPed_pauli)
+    # print(SWAPed_pauli)
     for i, op in enumerate(SWAPed_pauli):
         if op == 'X':
             change_basis_op.append(('H', i))
@@ -144,13 +144,13 @@ def expectation(qc, pauli_ops, n_shots=10000):
         if pauli_str == 'IIII':
             expectation += coeff
             continue
-        print(pauli_str, coeff)
+        # print(pauli_str, coeff)
         state_eigval = np.ones(len(qc.state))
         state_eigval[int(0.5*len(qc.state)):] *= -1 # first half of state has eigenvalue 1 and the second half -1
         # print(state_eigval)
         qc_copy = qc.copy()
         cb_ops = change_basis(pauli_str)
-        print(cb_ops)
+        # print(cb_ops)
 
         rotate_basis(qc_copy, cb_ops)
 

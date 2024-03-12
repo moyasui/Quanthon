@@ -54,7 +54,8 @@ class QubitAdaptAnsatz:
             self.create_complete_G_pool()
 
     def create_complete_V_pool(self, n):
-
+        
+        # TODO: change this to [(pauli, coeff), ...]
         if n == 2:
             return {'iYZ', 'iIY'}
 
@@ -71,6 +72,7 @@ class QubitAdaptAnsatz:
 
 
         return new_pool
+        
 
     
     def create_complete_G_pool(self):

@@ -1,6 +1,7 @@
 import unittest
 # from Quanthon import Qubit, Qubits_2, Qubits
 import Quanthon as qt
+from Quanthon import Hamiltonian, jordan_wigner
 import numpy as np
 
 class QuanthonTest(unittest.TestCase):
@@ -8,14 +9,20 @@ class QuanthonTest(unittest.TestCase):
     def test_Hamiltonian(self):
 
         print("Testing `Hamiltonian`")
-        from Quanthon import Hamiltonian, jordan_wigner
-        test_ham = Hamiltonian(np.ones((2,2)), np.ones((2,2,2,2)))
+
+        h_ij = np.array([[0, 1.0], [1.0, 0]])
+        h_ijkl = np.random.rand(2, 2, 2, 2)
+        # h_ijkl[0, 1, 0, 1] = 0.5  
+        test = Hamiltonian(h_ij, h_ijkl)
+
         print('Testing `jordan_wigner`')
-        test_jw = jordan_wigner(test_ham)
+        test_jw = jordan_wigner(test)
         print(test_jw)
+        # n = 4
+        # test = Hamiltonian(np.ones((n,n)), np.ones((n,n,n,n)))
+        # print(jw_test)
+
         print(100*'-')
-
-
     
     def test_qubits(self):
 
@@ -170,6 +177,7 @@ class QuanthonTest(unittest.TestCase):
         re = qc.state.conj().T @ new_state
 
         print("exact3: ", re, "expectation3: ", ee)
+
 
 if __name__ == '__main__':
     unittest.main()
