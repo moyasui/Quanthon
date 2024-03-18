@@ -1,3 +1,7 @@
+'''The basic classes for quantum computing. Replaced base.py, which was discontinued after Quanthon 0.3.0'''
+
+# TODO: Add n dimension rotation 
+
 import numpy as np
 from collections import Counter
 from .utils import one_fixed_bit, flip_bit, swap_bits
@@ -8,33 +12,26 @@ rangle = '\u27E9'
 
 class Gate:
 
-    def __init__(self, name, matrix, n_qubits, params=None):
+    def __init__(self, name, matrix, n_qubits):
         '''
         args:
             name: string, the name of the gate;
             matrix: operator matrix or a function which takes params is an argument and returns the matrix of the correct size;
             n_qubits: int, the number of qubits the gate acts on;
-            params: a parameter of the gate, if any.
             '''
         self.name = name
         self.matrix = matrix
 
         self.n_qubits = n_qubits
-        self.params = params
-
-        if params:
-            try:
-                self.matrix(params)
-            except:
-                raise ValueError(f"Invalid matrix function or parameters.")
+        # self.params = params
 
 
     def __repr__(self):
         return f"Gate: {self.name} \n Matrix: \n {self.matrix} \n"
     
-    def act(self, state):
-        if self.params is not None:
-            return self.matrix(self.params) @ state
+    def act(self, state, param=None):
+        if param is not None:
+            return self.matrix(param) @ state
         return self.matrix @ state
 
     
@@ -101,7 +98,7 @@ class Qubits:
         assert np.linalg.norm(state) == 1, "Invalid state: must be normalised"
         self.state = state
 
-    def reinit_state(self):
+    def reset_state(self):
         self.state = np.zeros(2**self.n_qubit, dtype=np.complex_)
         self.state[0] = 1
     
@@ -242,9 +239,16 @@ class Qubits:
     
     def run(self):
         
-        '''Execute the circuit.'''
+        '''Execute the circuit. Return the result.'''
         for gate in self.circuit:
             self.state = gate.act(self.state)       
+        
+    def run_and_reset(self):
+        '''Execute the circuit and reset the circuit. Return the result.'''
+        self.run()
+        state = self.state
+        self.reset_circuit()
+        return state
 
     def prob(self):
         prob = np.abs(self.state**2)
@@ -294,6 +298,7 @@ class Qubits:
                 'CNOTtrgt': '\\targ{}',
                 'SWAP1': lambda dist: "\\swap{" + f"{dist}" + '}',
                 'SWAP2': '\\targX{}',
+                # 'exp': lambda axis, theta: f'\\gate{R_{axis}}'
             }
 
             max_gate_length = max(len(gates) for gates in self.gate_history.values())

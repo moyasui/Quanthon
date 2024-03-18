@@ -1,5 +1,5 @@
 '''Doc:
-    VQEs
+    Normal VQE, Adapt-VQE
 '''
 
 from scipy.optimize import minimize
@@ -26,7 +26,7 @@ class VQE():
                 self.minimize = minimize
             
                 
-        def _objective(self,params):
+        def _objective(self, params):
             self.ansatz.create_circuit(params)
             qc = self.ansatz.qubits
             qc.run()
@@ -45,7 +45,7 @@ class VQE():
             self.H = H_pauli_str
 
             self.num_shots = num_shots
-            result = self.minimize(self._objective, self.init_points, method='Powell', options= {"maxiter": 10000})
+            result = self.minimize(self._objective, self.params, method='Powell', options= {"maxiter": 10000})
             min_params = result.x
             min_energy = result.fun
             
@@ -53,7 +53,7 @@ class VQE():
     
 
     
-class AdaptVQE(VQE):
+class AdaptVQE():
      
     def __init__(self, ansatz, init_points, expectation=None, optimiser=None):
         super().__init__(ansatz, init_points, expectation, optimiser)

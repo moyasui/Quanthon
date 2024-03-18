@@ -38,7 +38,6 @@ class HardwareEfficietnAnsatz:
 
     def run(self):
         self.qubits.run()
-
     
 
 
@@ -52,10 +51,10 @@ class QubitAdaptAnsatz:
         
         elif pool_type == 'G':
             self.create_complete_G_pool()
+        
 
     def create_complete_V_pool(self, n):
         
-        # TODO: change this to [(pauli, coeff), ...]
         if n == 2:
             return {'iYZ', 'iIY'}
 
@@ -79,24 +78,31 @@ class QubitAdaptAnsatz:
         raise NotImplementedError('Not implemented yet')
 
 
-    def append_op(self, op, params, old_gates):
+    def append_op(self, op):
 
         '''
-        old_gates: matrices of the gates from before
+        op: string, representing one of the operators in the pool
         
         '''
-        # make a circuit
-        self.qubits = Qubits(self.n_qubits) 
-        for gate in old_gates:
-            self.qubits.circuit.append(gate)
+        # no longer need to append all the gates since they are now saved
 
         op_mat = pauli_sum([op.strip('i'), 1j])
-        adapt_gate = Gate(f'exp({op})', expm(1j * op_mat))
+
+        def parametrised_mat(param):
+            return expm(1j * param * op_mat)
+        
+        self.params.append(0) # the corresponding parameter for the gate, initialised to 0.
+        adapt_gate = Gate(f'exp({op})', matrix=parametrised_mat)
         self.qubits.circuit.append(adapt_gate)
+        
+    
+    def run(self, params):
+        for i, gate in enumerate(self.qubits.circuit):
+            self.qubits.state = gate.act(self.qubits.state, params[i])
+
+
 
     
-    def run(self):
-        self.qubits.run()
 
         
 

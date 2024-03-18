@@ -14,33 +14,77 @@ class Hamiltonian:
 
 def get_ob_op(n, i, j, coeff):
     # when the indices are different
-    base = ['' if k == i or k == j else 'Z' if i < k < j else 'I' for k in range(n)]
+
     all_op = []
-    for op, factor in [('XX', 0.25), ('XY', 0.25j), ('YX', -0.25j), ('YY', 0.25)]:
+
+    if i < j:
+        base = ['' if k == i or k == j else 'Z' if i < k < j else 'I' for k in range(n)]
+        pauli_terms = [('XX', 0.25), ('XY', 0.25j), ('YX', -0.25j), ('YY', 0.25)]
+    else:
+        i, j = j, i  # the qubits that's smaller always on the left!!
+        base = ['' if k == i or k == j else 'Z' if i < k < j else 'I' for k in range(n)] 
+        # can't move outside conditional because i, j are swapped.
+        pauli_terms = [('XX', 0.25), ('XY', -0.25j), ('YX', 0.25j), ('YY', 0.25)]
+
+        # all gates acting on smaller numbers always on the left
+
+    for op, factor in pauli_terms:
         new_op = base.copy()
         new_op[i] = op[0]
         new_op[j] = op[1]
-        all_op.append((''.join(new_op), factor * coeff))
-
+        new_cf = factor * coeff
+        all_op.append((''.join(new_op), new_cf))
     return all_op
 
 
-def generate_products(creation, annihilation):
+def gen_prod_4u(ops):
     """
-    Generate products of creation and annihilation operators.
+    Generate products of creation and annihilation operators in the given order.
+
+    args:
+        ops: list of length 4, consists of creation and annihilation operators depending on the order 
+        of their indices.
+            
+    return:
+        list of strings, each string is a term of the product
     """
+
+    op1, op2, op3, op4 = ops
     products = []
-    for c1, coeff_c1 in creation:
-        for c2, coeff_c2 in creation:
-            for a1, coeff_a1 in annihilation:
-                for a2, coeff_a2 in annihilation:
-                    operator = c1 + c2 + a1 + a2
-                    coefficient = coeff_c1 * coeff_c2 * coeff_a1 * coeff_a2
-                    products.append((operator, coefficient))
+
+    for t1, factor_1 in op1:
+        for t2, factor_2 in op2:
+            for t3, factor_3 in op3:
+                for t4, factor_4 in op4:
+                    op = t1 + t2 + t3 + t4 
+                    factor = factor_1 * factor_2 * factor_3 * factor_4
+                    products.append((op, factor))
 
     return products
 
+def gen_prod_3u(ops):
+    """
+    Generate products of creation and annihilation operators in the given order.
 
+    args:
+        ops: list of length 3, consists of creation and annihilation operators depending on the order 
+        of their indices.
+            
+    return:
+        list of strings, each string is a term of the product
+    """
+
+    op1, op2, op3 = ops
+    products = []
+
+    for t1, factor_1 in op1:
+        for t2, factor_2 in op2:
+            for t3, factor_3 in op3:
+                op = t1 + t2 + t3
+                factor = factor_1 * factor_2 * factor_3
+                products.append((op, factor))
+
+    return products
 
 def get_tb_base(n,ordered_indices):
 
@@ -59,28 +103,25 @@ def get_tb_base(n,ordered_indices):
         
     return tb_op_base
     
-def get_tb_op(n,p,q,r,s,coeff):
-    # when all the indices are different
+def get_tb_4u(n,p,q,r,s,coeff):
 
-    # print(coeff, p, q, r, s)
+    '''Get the two body operaors when all 4 indices are unique.'''
+    
     ordered_indices = sorted([p,q,r,s])
+
     tb_op_base = get_tb_base(n, ordered_indices)
 
-    creation = [('X', 0.25 * coeff), ('Y', -0.25j * coeff)]
-    annihilation = [('X', 0.25 * coeff), ('Y', 0.25j * coeff)]
+    creation = [('X', 0.5), ('Y', -0.5j)]
+    annihilation = [('X', 0.5), ('Y', 0.5j)]
 
-    op_products = generate_products(creation,annihilation)
+    sorted_zip = sorted(zip([p,q,r,s], [creation, creation, annihilation, annihilation]))
+    ops = [op for _, op in sorted_zip]
 
-    # the first and the third term has odd number of Z(s), 
-    # and only the annihilation operator changes sign.
-    if ordered_indices[0] == r or ordered_indices[2] == r:
-        op_products = [(op, coeff * -1) for op, coeff in op_products]
-    
-    if ordered_indices[0] == s or ordered_indices[2] == s:
-        op_products = [(op, coeff * -1) for op, coeff in op_products]
-    
+    op_products = gen_prod_4u(ops)
+    # print(op_products)
+
     all_tb_op = []
-    for op, coeff in op_products:
+    for op, factor in op_products:
         # every product turn into one operator in the sum
         if np.allclose(coeff, 0, rtol=1e-04, atol=1e-05):
             continue # skip coeffs close to 0
@@ -91,21 +132,64 @@ def get_tb_op(n,p,q,r,s,coeff):
             new_op[index] = op[i]
         
         new_op = ''.join(new_op)
-        all_tb_op.append((new_op, coeff))
+        all_tb_op.append((new_op, factor * coeff))
         # print(new_op, coeff)
     return all_tb_op
 
 
-def get_tb_one_set(n, p, q, r, s):
+def get_tb_3u(n, p, q, r, s, coeff):
 
-    assert len({p, q, r, s}) == 3
+    # print(p, q, r, s)
+    ordered_indices = sorted([p,q,r,s])
 
-    tb_op_base = get_tb_base 
-    print(tb_op_base)
+    tb_op_base = get_tb_base(n, ordered_indices)
+
+    creation = [('X', 0.5), ('Y', -0.5j)]
+    annihilation = [('X', 0.5), ('Y', 0.5j)]
+    c_times_a = [('I', 0.5), ('Z', -0.5)]
+
+
+    appeared = set()
+    for i in [p,q,r,s]:    
+        if i in appeared:
+            repeated_index = i
+        else:
+            appeared.add(i)
+
+    ops = []
+    ordered_indices.remove(repeated_index) 
+    for i in ordered_indices: # now len 3
+        if i == repeated_index:
+            ops.append(c_times_a)
+        elif i == p or i == q:
+            ops.append(creation)
+        else:
+            ops.append(annihilation)
+
+    op_products = gen_prod_3u(ops)
+
+    all_tb_op = []
+    for op, factor in op_products:
+        # every product turn into one operator in the sum
+        if np.allclose(coeff, 0, rtol=1e-04, atol=1e-05):
+            continue # skip coeffs close to 0
+        
+        new_op = tb_op_base.copy()
+        
+        for i, index in enumerate(ordered_indices):
+            new_op[index] = op[i] # op is a pauli string for the indices given not the whole qubit oprator
+        
+        new_op = ''.join(new_op)
+        all_tb_op.append((new_op, factor * coeff))
+        # print(new_op, coeff)
+
+    return all_tb_op 
+
 
 
 def jordan_wigner(hamiltonian):
     
+    '''0th qubit to the left, always.'''
     h_pauli = []
     n = hamiltonian.one_body_coeffs.shape[0]
 
@@ -116,6 +200,7 @@ def jordan_wigner(hamiltonian):
             if np.allclose(hamiltonian.one_body_coeffs[i, j],0):
                 continue
 
+            # diagnol terms
             if i == j:
                 # II...III - I...IZ...I
 
@@ -123,33 +208,17 @@ def jordan_wigner(hamiltonian):
                 h_pauli.append((all_i, 0.5 * hamiltonian.one_body_coeffs[i, j]))
 
                 z_term = list(all_i)
+                # z_term[n-i-1] = 'Z'
                 z_term[i] = 'Z'
                 z_term = ''.join(z_term)
 
                 h_pauli.append((z_term, -0.5 * hamiltonian.one_body_coeffs[i, j]))
-                # print(z_term, hamiltonian.one_body_coeffs[i, j])
 
-                # print(i, j)
-                # print(((i)*'I' + 'Z' + (n-1-i)*'I'))
-
-            elif i < j:
-                
+            else:
                 ob_op = get_ob_op(n, i, j, hamiltonian.one_body_coeffs[i, j])
-                print(ob_op)
                 h_pauli.extend(ob_op)
+     
                 
-                # h_pauli.append(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I', -0.25j * hamiltonian.one_body_coeffs[i, j]))
-                # h_pauli.append(((i)*'I' + 'X' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I', 0.25 * hamiltonian.one_body_coeffs[i, j]))
-                # h_pauli.append(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I', 0.25 * hamiltonian.one_body_coeffs[i, j]))
-                # h_pauli.append(((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I', 0.25j * hamiltonian.one_body_coeffs[i, j]))
-
-                # print(i, j)
-                # print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
-                # print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'X' + (n-j-1)*'I'))
-                # print(((i)*'I' + 'Y' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
-                # print(((i)*'I' + 'X' + (j-1-i)*'Z' + 'Y' + (n-j-1)*'I'))
-                
-
     # two body
                 
     # print("unhealthy terms after one body", _check_health_jw(h_pauli, n))
@@ -164,15 +233,22 @@ def jordan_wigner(hamiltonian):
                     if r == s:
                         continue
 
-                    if np.allclose(hamiltonian.two_body_coeffs[p, q, r, s],0):
-                        # print(hamiltonian.two_body_coeffs[p, q, r, s])
+
+                    coeff = hamiltonian.two_body_coeffs[p, q, r, s]
+
+                    if np.allclose(coeff,0):
                         continue
                     
-                    # print(f'pqrs: {p}{r}{q}{s}, coeff: {hamiltonian.two_body_coeffs[p, q, r, s]}')
+                    # print(f'pqrs: {p}{q}{r}{s}, coeff: {coeff}')
 
+                    
+                    # if the outer indices are not all greater than the inner indices
+                    if (p > q and r > s) or (p < q and r < s):
+                        coeff *= -1
+                        # print(coeff)
 
                     if (p == r and q == s) or (p == s and q == r):
-                        
+
                         # print(p, q, r, s)
                         all_i = n*'I'
 
@@ -189,31 +265,33 @@ def jordan_wigner(hamiltonian):
                         qpz[q] = 'Z'
                         qpz = ''.join(qpz)
 
-                        # print(p, q, r, s)
+                        # print(p, q, r, s, coeff)
                         # print(all_i, pz, qz, qpz)
+                        # print()
                         # print("all_i", all_i)
                         # print("pz", pz)
                         # print("qz", qz)
                         # print("qpz", qpz)
 
-                        h_pauli.append((all_i, 0.25 * (hamiltonian.two_body_coeffs[p, q, r, s])))
-                        h_pauli.append((pz, -0.25 * (hamiltonian.two_body_coeffs[p, q, r, s])))
-                        h_pauli.append((qz, -0.25 * (hamiltonian.two_body_coeffs[p, q, r, s])))
-                        h_pauli.append((qpz, 0.25 * (hamiltonian.two_body_coeffs[p, q, r, s])))
+                        h_pauli.append((all_i, 0.25 * coeff))
+                        h_pauli.append((pz, -0.25 * coeff))
+                        h_pauli.append((qz, -0.25 * coeff))
+                        h_pauli.append((qpz, 0.25 * coeff))
 
                         
                     elif len({p, q, r, s}) == 4:
-                        # continue
                         # if they are all different
-                        # print('pqrs',p,q,r,s)
 
-                        tb_op = get_tb_op(n, p, q, r, s, hamiltonian.two_body_coeffs[p, q, r, s])
+                        tb_op = get_tb_4u(n, p, q, r, s, coeff)
                         h_pauli.extend(tb_op)
 
                     elif len({p, q, r, s}) == 3:
                         # 0223
-                        raise NotImplementedError("Not implemented yet")
-                        # get_tb_one_set(n, p, q, r, s)
+                        tb_op = get_tb_3u(n, p, q, r, s, coeff)
+                        h_pauli.extend(tb_op)
+
+
+
                         
 
 
@@ -253,7 +331,7 @@ def _simplify_pauli_terms(terms):
         else:
             simplified_terms[pauli_string] = coeff
     
-    simplified_terms_list = [(pauli_string, coeff) for pauli_string, coeff in simplified_terms.items()]
+    simplified_terms_list = [(pauli_string, coeff) for pauli_string, coeff in simplified_terms.items() if coeff != 0]
     
     # will sort alphabetically
     return sorted(simplified_terms_list)
@@ -280,7 +358,7 @@ def test_jw(is_debug=True):
 
     # ------------test my jordan_wigner---------------
 
-    h = Hamiltonian(h, u)
+    h = Hamiltonian(np.flip(h), np.flip(u))
     jw_h = jordan_wigner(h)
 
     if is_debug:
@@ -322,8 +400,8 @@ if __name__ == '__main__':
     from qiskit_nature.second_q.mappers import JordanWignerMapper
     import pyscf
 
-    from pyscf_mel import get_hs
-    from __qiskit_hamiltonian import get_h2
+    from ut_pyscf_mel import get_hs
+    from ut_qiskit_hamiltonian import get_h2
     
 
     test_jw(is_debug=True)
