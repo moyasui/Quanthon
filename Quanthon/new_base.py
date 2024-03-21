@@ -29,9 +29,16 @@ class Gate:
     def __repr__(self):
         return f"Gate: {self.name} \n Matrix: \n {self.matrix} \n"
     
+    def _check_is_unitary(self, matrix):
+
+        if not np.allclose(matrix @ matrix.conj().T, np.eye(matrix.shape[0])):
+            raise ValueError(f"{self.name} is not unitary.")
+    
     def act(self, state, param=None):
         if param is not None:
+            self._check_is_unitary(self.matrix(param))
             return self.matrix(param) @ state
+        self._check_is_unitary(self.matrix)
         return self.matrix @ state
 
     
@@ -172,7 +179,7 @@ class Qubits:
         self.circuit.append(Gate('Z', matrix, self.n_qubit))
         self._update_gate_history('Z', i)
     
-    def sdag(self,i):
+    def Sdag(self,i):
         # self.operate(self.s.conj(), i)
         matrix = self._make_op_mat(self.s.conj(), i)
         self.circuit.append(Gate('Sdag', matrix, self.n_qubit))
@@ -186,16 +193,18 @@ class Qubits:
     # def param_ry(self,i):
     #     pass
 
-    def rx(self, theta, i):
+    def Rx(self, theta, i):
 
-        matrix = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
+        rx = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
         # self.operate(Rx, i) 
+        matrix = self._make_op_mat(rx, i)
         self.circuit.append(Gate('Rx', matrix, self.n_qubit))
         self._update_gate_history(f'Rx_{theta}', i)
 
-    def ry(self, phi, i):
-        matrix = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.y
+    def Ry(self, phi, i):
+        ry = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.y
         # self.operate(Ry, i)
+        matrix = self._make_op_mat(ry, i)
         self.circuit.append(Gate('Ry', matrix, self.n_qubit))
         self._update_gate_history(f'Ry_{phi}', i)
 

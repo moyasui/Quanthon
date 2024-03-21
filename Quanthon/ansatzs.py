@@ -9,32 +9,39 @@ from scipy.linalg import expm
 from .new_base import Qubits, Gate
 from .utils import pauli_sum
 
+class Ansatz:
 
-
-class HardwareEfficietnAnsatz:
-
+    '''Should work for any type of ansatz that are not evolving, do not use on its own.'''
     def __init__(self, n_qubits, reps=1) -> None:
-        '''args:
-            params_init: array of parameters initial values'''
-        self.qubits = Qubits(n_qubits)
+
         self.n_qubits = n_qubits
         self.reps = reps
+        self.n_params = 2 * n_qubits * reps
+
+  
+class HardwareEfficietnAnsatz(Ansatz):
+
+    def __init__(self, n_qubits, reps=1) -> None:
+        super().__init__(n_qubits, reps)
 
 
-    def create_circuit(self, params):
+    def create_circuit(self, init_params):
         
         self.qubits = Qubits(self.n_qubits)
-
-        if len(params) != 2*self.reps:
-            raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(params)} != {2*self.rep}')
+        if len(init_params) != self.n_params:
+            raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
         
-        params.reshape(self.reps, 2*self.qubits.n_qubit)
+        reshaped_params = init_params.reshape(self.reps, 2*self.n_qubits)
+        
         for r in range(self.reps):
-            for i in range(self.qubits.n_qubit):
-                self.qubits.rx(params[r, i], i)
-                self.qubits.ry(params[r, i + self.qubits.n_qubit], i)
+            for i in range(self.n_qubits):
+                self.qubits.Rx(reshaped_params[r, i], i)
+                self.qubits.Ry(reshaped_params[r, i + self.n_qubits], i)
                 if i % 2 == 0:
-                    self.qubits.cnot(i, i+1)
+                    self.qubits.CNOT(i, i+1)
+        
+
+        
 
     def run(self):
         self.qubits.run()
@@ -43,37 +50,43 @@ class HardwareEfficietnAnsatz:
 
 class QubitAdaptAnsatz:
 
-    def __init__(self, n_qubits, pool_type) -> None:
+    def __init__(self, n_qubits, pool='V') -> None:
+
+        '''Ansatz for the Adapt-VQE calculation.'''
 
         self.qubits = Qubits(n_qubits)
-        if pool_type == 'V':
+        if pool == 'V':
             self.pool = self.create_complete_V_pool(n_qubits)
         
-        elif pool_type == 'G':
-            self.create_complete_G_pool()
+        elif pool == 'G':
+            self.pool = self.create_complete_G_pool()
+        
+        else:
+            self.pool = pool # custom pool, doens't have to be complete
+            
         
 
     def create_complete_V_pool(self, n):
         
         if n == 2:
-            return {'iYZ', 'iIY'}
+            return ['iYZ', 'iIY']
 
         prev_set = self.create_complete_V_pool(n - 1)
-        new_pool = set()
+        new_pool = [] # set()
 
         for prev_op in prev_set:
             new_op = prev_op + 'Z'
-            new_pool.add(new_op)
+            new_pool.append(new_op)
 
 
-        new_pool.add('i' + (n-1) * 'I' + 'Y')
-        new_pool.add('i' + (n-2) * 'I' + 'YI')
+        new_pool.append('i' + (n-1) * 'I' + 'Y')
+        new_pool.append('i' + (n-2) * 'I' + 'YI')
 
 
         return new_pool
         
 
-    
+
     def create_complete_G_pool(self):
         raise NotImplementedError('Not implemented yet')
 
@@ -89,9 +102,9 @@ class QubitAdaptAnsatz:
         op_mat = pauli_sum([op.strip('i'), 1j])
 
         def parametrised_mat(param):
-            return expm(1j * param * op_mat)
+            return expm(1j * param * op_mat) # e^{itA}
         
-        self.params.append(0) # the corresponding parameter for the gate, initialised to 0.
+        # self.params.append(0) # the corresponding parameter for the gate, initialised to 0.
         adapt_gate = Gate(f'exp({op})', matrix=parametrised_mat)
         self.qubits.circuit.append(adapt_gate)
         

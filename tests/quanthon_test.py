@@ -84,7 +84,7 @@ class QuanthonTest(unittest.TestCase):
     
     def test_expectation(self):
 
-        print("Testing `expectation`")
+        print("Testing `cal_expectation`")
         qc = qt.Qubits(4)
 
         qc.H(0)
@@ -101,14 +101,14 @@ class QuanthonTest(unittest.TestCase):
 
         H_mat = qt.pauli_sum(Ham)
         # print(H_mat)
-        energy = qt.expectation(qc, Ham, 100000)
+        energy = qt.cal_expectation(qc, Ham, 100000)
 
         exact_energy = qc.state.conj().T @ H_mat @ qc.state
 
         print("exact1: ", exact_energy, "expectation1: ", energy)
         # if not np.allclose(exact_energy,energy,rtol=1e-02, atol=1e-03):
         #     print("exact1: ", exact_energy, "expectation1: ", energy)
-        #     raise Exception("expectation doesn't work.")
+        #     raise Exception("cal_expectation doesn't work.")
         print(100*'-')
     
     def test_exp_2(self):
@@ -130,7 +130,7 @@ class QuanthonTest(unittest.TestCase):
 
         H_mat = qt.pauli_sum(Ham)
         # print(H_mat)
-        ee = qt.expectation(qc, Ham, n_shots=100000)
+        ee = qt.cal_expectation(qc, Ham, n_shots=100000)
 
         new_state = H_mat @ qc.state
         re = qc.state.conj().T @ new_state
@@ -138,7 +138,7 @@ class QuanthonTest(unittest.TestCase):
         print("exact2: ", re, "expectation2: ", ee)
         # if not np.allclose(re,ee,rtol=1e-02, atol=1e-03):
         #     print("exact2: ", re, "expectation2: ", ee)
-        #     raise Exception("expectation doesn't work.")
+        #     raise Exception("cal_expectation doesn't work.")
 
         print(100*'-')
 
@@ -171,7 +171,7 @@ class QuanthonTest(unittest.TestCase):
         
         H_mat = qt.pauli_sum(Ham)
         # print(H_mat)
-        ee = qt.expectation(qc, Ham, n_shots=100000)
+        ee = qt.cal_expectation(qc, Ham, n_shots=100000)
 
         new_state = H_mat @ qc.state
         re = qc.state.conj().T @ new_state

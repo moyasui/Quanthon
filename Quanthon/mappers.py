@@ -1,16 +1,5 @@
 import numpy as np
 
-class Hamiltonian:
-
-    def __init__(self, ob_coeffs, tb_coeffs) -> None:
-        '''
-        args:
-            ob_coeffs: 2d array of one body coefficients.
-            
-            tb_coeffs: 4d array of two body coefficients.
-        '''
-        self.one_body_coeffs = ob_coeffs 
-        self.two_body_coeffs = tb_coeffs
 
 def get_ob_op(n, i, j, coeff):
     # when the indices are different
@@ -123,7 +112,7 @@ def get_tb_4u(n,p,q,r,s,coeff):
     all_tb_op = []
     for op, factor in op_products:
         # every product turn into one operator in the sum
-        if np.allclose(coeff, 0, rtol=1e-04, atol=1e-05):
+        if np.allclose(coeff, 0):
             continue # skip coeffs close to 0
         
         new_op = tb_op_base.copy()
@@ -139,6 +128,13 @@ def get_tb_4u(n,p,q,r,s,coeff):
 
 def get_tb_3u(n, p, q, r, s, coeff):
 
+    '''Get the two body operaors when 3 indices are unique.
+    args:
+        n: int, number of qubits,
+        p, q, r, s: int, the indices of the qubits the second quantisation operation is on.
+    
+    return:
+        all_tb_op: list of tuples in the form of '''
     # print(p, q, r, s)
     ordered_indices = sorted([p,q,r,s])
 
@@ -147,7 +143,6 @@ def get_tb_3u(n, p, q, r, s, coeff):
     creation = [('X', 0.5), ('Y', -0.5j)]
     annihilation = [('X', 0.5), ('Y', 0.5j)]
     c_times_a = [('I', 0.5), ('Z', -0.5)]
-
 
     appeared = set()
     for i in [p,q,r,s]:    
@@ -171,7 +166,7 @@ def get_tb_3u(n, p, q, r, s, coeff):
     all_tb_op = []
     for op, factor in op_products:
         # every product turn into one operator in the sum
-        if np.allclose(coeff, 0, rtol=1e-04, atol=1e-05):
+        if np.allclose(coeff, 0):
             continue # skip coeffs close to 0
         
         new_op = tb_op_base.copy()
@@ -189,7 +184,14 @@ def get_tb_3u(n, p, q, r, s, coeff):
 
 def jordan_wigner(hamiltonian):
     
-    '''0th qubit to the left, always.'''
+    '''
+    Perform the Jordan-Wigner transform for which maps second quantisation Hamiltonian to qubit Hamiltonians.
+    N.B. 0th qubit to the left, always.
+    arg:
+        hamiltonian: Hamiltonian, the second quantisation Hamiltonian containing the overlap integrals.
+    
+    return:
+        h_pauli: list of tuples, the qubit Hamiltonian in terms of Pauli strings.'''
     h_pauli = []
     n = hamiltonian.one_body_coeffs.shape[0]
 
@@ -291,10 +293,6 @@ def jordan_wigner(hamiltonian):
                         h_pauli.extend(tb_op)
 
 
-
-                        
-
-
     if _check_health_jw(h_pauli, n):
         raise ValueError("There are terms whose length is not equal to the number of qubits.")
     
@@ -336,75 +334,3 @@ def _simplify_pauli_terms(terms):
     # will sort alphabetically
     return sorted(simplified_terms_list)
 
-
-
-def test_jw(is_debug=True):
-    # get the integrals
-
-    geometry = "H 0 0 0; H 0 0 0.7414"
-    basis = "sto-3g"
-    charge = 0
-
-    mol = pyscf.gto.Mole()
-    # mol.unit = "bohr" # Default is angstrom
-    mol.build(atom=geometry, basis=basis, charge=charge)
-
-    # h, u = get_hs(mol, is_rhf=True)
-    h, u = get_h2()
-
-
-    # print(h.shape, u.shape)
-
-
-    # ------------test my jordan_wigner---------------
-
-    h = Hamiltonian(np.flip(h), np.flip(u))
-    jw_h = jordan_wigner(h)
-
-    if is_debug:
-        print('My jordan wigner')
-    for op, coeff in jw_h:
-        if is_debug:
-            print(f'{coeff:+.8f} * {op}')
-
-    # get the transformation with qiskit
-
-    
-    '''From qiskit, for testing the jw'''
-    driver = PySCFDriver(atom="H 0 0 0; H 0 0 0.7414", charge=0, spin=0, basis='sto3g')
-    problem = driver.run()
-
-    hamiltonian = problem.hamiltonian.second_q_op()
-    
-    # for label, coeff in sorted(hamiltonian.items()):
-        # print(f"{coeff:+.8f} * '{label}'")
-
-
-    mapper = JordanWignerMapper()
-    qubit_op = mapper.map(hamiltonian)
-    H2_pauli = []
-
-    if is_debug:
-        print('qiskit')
-    for pauli, coeff in sorted(qubit_op.label_iter()):
-        if is_debug:
-            print(f"{coeff.real:+.8f} * {pauli}")
-        H2_pauli.append((pauli, coeff))
-
-    print(f"my_pauli_len={len(jw_h)}, qiskit_len={len(H2_pauli)}")
-
-if __name__ == '__main__':
-    import numpy as np
-
-    from qiskit_nature.second_q.drivers import PySCFDriver
-    from qiskit_nature.second_q.mappers import JordanWignerMapper
-    import pyscf
-
-    from ut_pyscf_mel import get_hs
-    from ut_qiskit_hamiltonian import get_h2
-    
-
-    test_jw(is_debug=True)
-    
-
-    
