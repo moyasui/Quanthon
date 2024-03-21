@@ -77,7 +77,6 @@ class AdaptVQE():
         '''
         # in practice one should estimate this as well
         state = self.ansatz.qubits.state
-        print(f"H: {self.H_mat}, A: {A}")
         grad = state.conj().T @ (self.H_mat @ A - A @ self.H_mat) @ state
         
         return grad
