@@ -102,7 +102,7 @@ class Qubits:
 
     def set_state(self, state):
         assert len(state) == 2**self.n_qubit, f"Invalid state: must have length {2**self.n_qubit}"
-        assert np.linalg.norm(state) == 1, "Invalid state: must be normalised"
+        assert np.isclose(np.linalg.norm(state), 1), "Invalid state: must be normalised."
         self.state = state
 
     def reset_state(self):
@@ -250,7 +250,7 @@ class Qubits:
         
         '''Execute the circuit. Return the result.'''
         for gate in self.circuit:
-            self.state = gate.act(self.state)       
+            self.state = gate.act(self.state)
         
     def run_and_reset(self):
         '''Execute the circuit and reset the circuit. Return the result.'''

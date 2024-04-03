@@ -15,7 +15,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
     
 #### VERSION HERE #####
-version = "0.3.3.4" #####
+version = "0.3.4" #####
 #######################    
 
 setup(
@@ -39,6 +39,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent"
     ],
     packages=["Quanthon"],
