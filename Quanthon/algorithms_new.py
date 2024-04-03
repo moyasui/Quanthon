@@ -46,7 +46,7 @@ class VQE():
             self.H = H_pauli_str
 
             self.num_shots = num_shots
-            result = self.minimize(self._objective, self.params, method='Powell', options= {"maxiter": 10000})
+            result = self.minimise(self._objective, self.params, method='Powell', options= {"maxiter": 10000})
             min_params = result.x
             min_energy = result.fun
             
@@ -109,7 +109,7 @@ class AdaptVQE():
             op_grad = self.gradient(op_mat)
             abs_grad = np.abs(op_grad)
             
-            print(f"op: {op}, grad: {op_grad}")
+            # print(f"op: {op}, grad: {op_grad}")
 
             if abs_grad > max_abs_grad:
                 op_cand = op

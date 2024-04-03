@@ -184,14 +184,6 @@ class Qubits:
         matrix = self._make_op_mat(self.s.conj(), i)
         self.circuit.append(Gate('Sdag', matrix, self.n_qubit))
         self._update_gate_history('Sdag', i)
-    
-    # def param_rx(self, theta, i):
-    #     matrix = lambda theta: np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
-    #     self.circuit.append(Gate('Rx', matrix, self.n_qubit, theta))
-    #     self._update_gate_history(r'Rx_\theta', i)
-
-    # def param_ry(self,i):
-    #     pass
 
     def Rx(self, theta, i):
 
@@ -236,7 +228,6 @@ class Qubits:
         
 
         matrix = np.zeros((self.opeartor_size, self.opeartor_size))
-
         for i in range(self.opeartor_size):
             j = swap_bits(i, self.n_qubit - qubit1 - 1, self.n_qubit - qubit2 - 1)
             matrix[i, j] = 1

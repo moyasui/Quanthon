@@ -47,7 +47,7 @@ class HardwareEfficietnAnsatz(Ansatz):
             for i in range(self.n_qubits):
                 self.qubits.Rx(reshaped_params[r, i], i)
                 self.qubits.Ry(reshaped_params[r, i + self.n_qubits], i)
-                if i % 2 == 0:
+                if i != self.n_qubits - 1:
                     self.qubits.CNOT(i, i+1)
         
 

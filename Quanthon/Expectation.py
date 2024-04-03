@@ -142,7 +142,7 @@ def cal_expectation(qc, pauli_ops, n_shots=10000):
 	for pauli_str, coeff in pauli_ops:
 
 		
-		if pauli_str == 'IIII':
+		if set(pauli_str) == {'I'}:
 			expectation += coeff
 			continue
 		# print(pauli_str, coeff)
