@@ -152,7 +152,7 @@ class AdaptVQE():
         # energy = state.conj().T @ self.H_mat @ state
         return energy
     
-    def run_adapt_circuit(self, H, num_shots=10000, max_iter=100):
+    def run_adapt_circuit(self, H, num_shots=10000, max_iter=100, grad_eps=1e-4):
         '''
         args:
             H: list of 2-tuple such as [('II', 0.5)]
@@ -174,7 +174,7 @@ class AdaptVQE():
             print(f"i: {i}, min_energy = {energy}")
             
 
-            if not self._append_operator(): # new parameter is added here 
+            if not self._append_operator(eps=grad_eps): # new parameter is added here 
                 break
             
         self.ansatz.run(self.params) # update the state with the final parameters
