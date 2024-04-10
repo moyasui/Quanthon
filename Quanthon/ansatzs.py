@@ -16,7 +16,7 @@ import numpy as np
 from scipy.linalg import expm
 
 
-from .new_base import Qubits, Gate
+from .base import Qubits, Gate
 from .utils import pauli_sum
 
 class Ansatz:
