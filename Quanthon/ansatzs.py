@@ -73,7 +73,7 @@ class QubitAdaptAnsatz:
 
         if init_state is None:
             # initial state not sepcified, initialise randomly
-            init_state = np.random.rand(2**n_qubits)
+            init_state = np.random.rand(2**n_qubits) + 1j * np.random.rand(2**n_qubits)
             init_state = init_state / np.linalg.norm(init_state) 
         
         self.init_state = init_state
