@@ -167,8 +167,8 @@ class AdaptVQE():
         self.params = np.array([])
         for i in range(max_iter): 
             # need to update the state too
-            print(self.ansatz.qubits)
-
+            # print(self.ansatz.qubits)
+            # self.ansatz.run(self.params) # ??????
             old_params, energy = self.minimise_eigenvalue(num_shots) # state is not updated here
             self.params = old_params
             print(f"i: {i}, min_energy = {energy}")
