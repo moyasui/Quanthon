@@ -2,7 +2,7 @@
     Normal VQE, Adapt-VQE
 '''
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, Bounds
 import numpy as np
 import warnings
 from .expectation import cal_expectation
@@ -25,14 +25,20 @@ class VQE():
                 raise ValueError(f'The initial points ({init_points}) do not match the dimension of the ansatz.')
 
             self.minimise = optimiser
-            
                 
+
         def _objective(self, params):
+
+            # print(params)
+            params = np.real(params)
             self.ansatz.create_circuit(params)
             qc = self.ansatz.qubits
             qc.run()
-
+            
             energy = self.expectation(qc, self.H, self.num_shots)
+
+            # self.H_mat = pauli_sum(self.H)
+            # energy = self.ansatz.qubits.state.conj().T @ self.H_mat @ self.ansatz.qubits.state
             return energy
 
         def minimise_eigenvalue(self, H_pauli_str, num_shots=10000):
@@ -46,7 +52,16 @@ class VQE():
             self.H = H_pauli_str
 
             self.num_shots = num_shots
-            result = self.minimise(self._objective, self.params, method='Powell', options= {"maxiter": 10000})
+
+            lb = -np.pi * np.ones(len(self.params))
+            ub = np.pi * np.ones(len(self.params))
+            bounds = Bounds(lb, ub)
+            
+            result = self.minimise(self._objective, 
+                                   self.params, 
+                                   method='Powell', 
+                                #    bounds=bounds, 
+                                   options= {"maxiter": 10000})
             min_params = result.x
             min_energy = result.fun
             

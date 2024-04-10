@@ -135,8 +135,30 @@ def swap_bits(val, i, j): # https://stackoverflow.com/questions/12173774/how-to-
     
 if __name__ == "__main__":
     # Test Pauli operators
-    pauli_ops = [('IZZZ', 3), ('ZXYI', 2)]
-    a = pauli_sum(pauli_ops)
+    # pauli_ops = [('IZZZ', 3), ('ZXYI', 2)]
+    qubit_op = [('IIIIII', 0.1875), ('IIIIIZ', -0.5625), 
+                    ('IIIIZI', -0.0625), ('IIIZII', 0.4375), 
+                    ('IIZIII', -0.5625), ('IIZIIZ', 0.0625), 
+                    ('IXXIII', 0.0625), ('IXXIIZ', -0.03125), 
+                    ('IXXIZI', -0.03125), ('IXYIIZ', 0.03125j), 
+                    ('IXYIZI', -0.03125j), ('IYXIIZ', -0.03125j), 
+                    ('IYXIZI', 0.03125j), ('IYYIII', (0.0625+0j)), 
+                    ('IYYIIZ', (-0.03125+0j)), ('IYYIZI', (-0.03125+0j)), 
+                    ('IZIIII', -0.0625), ('IZIIZI', 0.0625), 
+                    ('XXIIII', 0.0625), ('XXIIZI', -0.03125), 
+                    ('XXIZII', -0.03125), ('XYIIZI', 0.03125j), 
+                    ('XYIZII', -0.03125j), ('XZXIII', 0.0625), 
+                    ('XZXIIZ', -0.03125), ('XZXZII', -0.03125), 
+                    ('XZYIIZ', 0.03125j), ('XZYZII', -0.03125j), 
+                    ('YXIIZI', -0.03125j), ('YXIZII', 0.03125j), 
+                    ('YYIIII', (0.0625+0j)), ('YYIIZI', (-0.03125+0j)), 
+                    ('YYIZII', (-0.03125+0j)), ('YZXIIZ', -0.03125j), 
+                    ('YZXZII', 0.03125j), ('YZYIII', (0.0625+0j)), 
+                    ('YZYIIZ', (-0.03125+0j)), ('YZYZII', (-0.03125+0j)), 
+                    ('ZIIIII', 0.4375), ('ZIIZII', 0.0625)]
+    h = pauli_sum(qubit_op)
+    # a = pauli_sum(pauli_ops)
+    
     
     n = 78
     t = 0

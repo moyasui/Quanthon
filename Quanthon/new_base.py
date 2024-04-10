@@ -291,8 +291,8 @@ class Qubits:
                 'X': '\\gate{X}',
                 'Y': '\\gate{Y}',
                 'Z': '\\gate{Z}',
-                'Rx': lambda angle: '\\gate{R_x(' + f"{angle}" + ')}',
-                'Ry': lambda angle: '\\gate{R_y(' + f"{angle}" + ')}',
+                'Rx': lambda angle: '\\gate{R_x(' + f"{float(angle).real:.3f}" + ')}',
+                'Ry': lambda angle: '\\gate{R_y(' + f"{float(angle).real:.3f}" + ')}',
                 'Sdag': '\\gate{S^\\dagger}',
                 'CNOTctrl': lambda dist: "\\ctrl{" + f"{dist}" + '}',
                 'CNOTtrgt': '\\targ{}',
@@ -332,23 +332,22 @@ class Qubits:
 
 
 if __name__ == "__main__":
-    qc = Qubits(4)
-    qc.H(1)
-    qc.H(0)
+    qc = Qubits(6)
+    # qc.H(1)
+    # qc.H(0)
 
-    qc.CNOT(0,1)
-    qc.CNOT(1,2)
-    qc.CNOT(2,3)
+    # qc.CNOT(0,1)
+    # qc.CNOT(1,2)
+    # qc.CNOT(2,3)
 
 
-    qc.run()
+    # qc.run()
     # print(qc)
 
     # qc.X(1)
     # qc.Y(0)
     # qc.rx(0.4, 1)
-    
-    # qc.rx(-1.2080928149562626, 1)
+
     # print(qc.gate_history)
     # qc.draw(True)
 

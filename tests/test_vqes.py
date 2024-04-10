@@ -1,89 +1,17 @@
 import unittest
 import numpy as np
 
-from qiskit_nature.second_q.mappers import JordanWignerMapper
-from qiskit_nature.second_q.operators import FermionicOp
-from qiskit_nature.second_q.algorithms import GroundStateEigensolver
-
-from qiskit.quantum_info import SparsePauliOp
-from qiskit.primitives import Estimator
-from qiskit.circuit.library import TwoLocal
-
-from qiskit_algorithms import VQE as qk_VQE
-from qiskit_algorithms import AdaptVQE as qk_AdaptVQE
-
-from qiskit_algorithms.optimizers import COBYLA, L_BFGS_B, SLSQP
-from qiskit_algorithms.utils import algorithm_globals
-
-import warnings
-
+# testing features
 from Quanthon import VQE, AdaptVQE, jordan_wigner, Hamiltonian, QubitAdaptAnsatz, HardwareEfficietnAnsatz, pauli_sum
+
+# test tools
+from .test_cmp_qk import qiskit_hardware
+from .test_utils import is_hermitian
 
 
 class AlgorithmTest(unittest.TestCase):
 
-    def _qiskit_hardware(self, op):
-        
-        warnings.filterwarnings("ignore")
 
-        estimator = Estimator()
-        qubit_op = SparsePauliOp.from_list(op)
-
-        # we will iterate over these different optimizers
-        optimizers = [COBYLA(maxiter=80), L_BFGS_B(maxiter=60), SLSQP(maxiter=60)]
-        converge_counts = np.empty([len(optimizers)], dtype=object)
-        converge_vals = np.empty([len(optimizers)], dtype=object)
-
-        for i, optimizer in enumerate(optimizers):
-            print("\rOptimizer: {}        ".format(type(optimizer).__name__), end="")
-            algorithm_globals.random_seed = 50
-            ansatz = TwoLocal(rotation_blocks="ry", entanglement_blocks="cz")
-
-            counts = []
-            values = []
-
-            def store_intermediate_result(eval_count, parameters, mean, std):
-                counts.append(eval_count)
-                values.append(mean)
-
-            vqe = qk_VQE(estimator, ansatz, optimizer, callback=store_intermediate_result)
-            result = vqe.compute_minimum_eigenvalue(operator=qubit_op)
-            converge_counts[i] = np.asarray(counts)
-            converge_vals[i] = np.asarray(values)
-        
-        return result
-    
-    def _qiskit_adapt(self):
-        
-        pass
-        warnings.filterwarnings("ignore")
-
-        estimator = Estimator()
-        qubit_op = SparsePauliOp.from_list(
-        [
-            ("II", -1.052373245772859),
-            ("IZ", 0.39793742484318045),
-            ("ZI", -0.39793742484318045),
-            ("ZZ", -0.01128010425623538),
-            ("XX", 0.18093119978423156),
-        ]
-        )
-
-        # we will iterate over these different optimizers
-        optimizer = SLSQP(maxiter=60)
-
-        print("\rOptimizer: {}        ".format(type(optimizer).__name__), end="")
-        algorithm_globals.random_seed = 50
-        ansatz = TwoLocal(rotation_blocks="ry", entanglement_blocks="cz")
-
-        vqe = VQE(estimator, ansatz, optimizer)
-        adapt_vqe = AdaptVQE(vqe)
-        eigenvalue, _ = adapt_vqe.compute_minimum_eigenvalue(qubit_op)
-        print(eigenvalue)
-
-        return eigenvalue
-
-    
     def test_vqe(self):
 
         op_str =[("II", -1.052373245772859),
@@ -105,7 +33,7 @@ class AlgorithmTest(unittest.TestCase):
 
         # with qiskit
 
-        result = self._qiskit_hardware(op_str)
+        result = qiskit_hardware(op_str)
         # print("diff from qiskit")
         print(result.eigenvalue)
     
@@ -132,55 +60,51 @@ class AlgorithmTest(unittest.TestCase):
 
         # with qiskit
 
-        result = self._qiskit_hardware(qubit_op)
+        result = qiskit_hardware(qubit_op)
         print(result.eigenvalue)
 
- 
+    def _test_pairing(self):
+            
+        qubit_op = [('IIIIII', 0.1875), ('IIIIIZ', -0.5625), 
+                    ('IIIIZI', -0.0625), ('IIIZII', 0.4375), 
+                    ('IIZIII', -0.5625), ('IIZIIZ', 0.0625), 
+                    ('IXXIXX', 0.03125), ('IXXIYY', (0.03125+0j)), 
+                    ('IXYIXY', (-0.03125+0j)), ('IXYIYX', (0.03125+0j)), 
+                    ('IYXIXY', (0.03125+0j)), ('IYXIYX', (-0.03125+0j)), 
+                    ('IYYIXX', (0.03125+0j)), ('IYYIYY', (0.03125+0j)), 
+                    ('IZIIII', -0.0625), ('IZIIZI', 0.0625), 
+                    ('XXIXXI', 0.03125), ('XXIYYI', (0.03125+0j)), 
+                    ('XYIXYI', (-0.03125+0j)), ('XYIYXI', (0.03125+0j)), 
+                    ('XZXXZX', 0.03125), ('XZXYZY', (0.03125+0j)), 
+                    ('XZYXZY', (-0.03125+0j)), ('XZYYZX', (0.03125+0j)), 
+                    ('YXIXYI', (0.03125+0j)), ('YXIYXI', (-0.03125+0j)), 
+                    ('YYIXXI', (0.03125+0j)), ('YYIYYI', (0.03125+0j)), 
+                    ('YZXXZY', (0.03125+0j)), ('YZXYZX', (-0.03125+0j)), 
+                    ('YZYXZX', (0.03125+0j)), ('YZYYZY', (0.03125+0j)), 
+                    ('ZIIIII', 0.4375), ('ZIIZII', 0.0625)]
+        
 
-def matrix_to_fermionic_op(one_body_matrix, two_body_matrix):
-    # Get the size of the one-body matrix
-    n = one_body_matrix.shape[0]
+        h_mat = pauli_sum(qubit_op)
+        if not is_hermitian(h_mat):
+            raise Warning('This Hamiltonian is not hermitian.')
 
-    # Initialize an empty FermionicOp dictionary
-    op_dict = {}
+        my_result = self.my_hardware(qubit_op)
+        print(my_result)
 
-    # Handle one-body terms
-    for i in range(n):
-        for j in range(n):
-            if one_body_matrix[i, j] != 0:
-                key = f"+_{i} -_{j}"
-                op_dict[key] = one_body_matrix[i, j]
+        result = qiskit_hardware(qubit_op)
+        print(result.eigenvalue)
 
-    # Handle two-body terms
-    # Assuming two_body_matrix is a 4-dimensional array
-    for i in range(n):
-        for j in range(n):
-            for k in range(n):
-                for l in range(n):
-                    if two_body_matrix[i, j, k, l] != 0:
-                        # Create the corresponding fermionic operator for the two-body term
-                        key = f"+_{i} +_{j} -_{k} -_{l}"
-                        op_dict[key] = two_body_matrix[i, j, k, l]
+    def my_hardware(self, qubit_op, seed=267):
+        n = len(qubit_op[0][0])
+        ansatz = HardwareEfficietnAnsatz(n, reps=1)
+        rng = np.random.default_rng(seed)
+        n_params = ansatz.n_params
+        init_points = rng.random(n_params) * 2 * np.pi - np.pi
+        # print(init_points)
+        vqe = VQE(ansatz, init_points)
+        min_params, min_energy = vqe.minimise_eigenvalue(qubit_op, 10000)
+        print(min_energy.real)
 
-    # Create and return the FermionicOp
-    return FermionicOp(op_dict)
-
-def make_random_hamiltonian(n=4, seed=42):
-
-    # one_body = np.zeros((n,n))
-    rng = np.random.default_rng(seed)
-    one_body = rng.random((n,n)) + 1j*rng.random((n,n))
-    one_body = one_body + one_body.conj().T # make it hermitian
-
-    two_body = rng.random((n,n,n,n)) + 1j*rng.random((n,n,n,n))
-    two_body = two_body + two_body.conj().T
-
-    op = matrix_to_fermionic_op(one_body,two_body)
-
-    h = Hamiltonian(np.flip(one_body), np.flip(two_body))
-
-    # h: Hamiltonian, op: FermionicOp for qiskit stuff
-    return h, op
 
 if __name__ == '__main__':
     unittest.main()

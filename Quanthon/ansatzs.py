@@ -45,13 +45,18 @@ class HardwareEfficietnAnsatz(Ansatz):
         
         for r in range(self.reps):
             for i in range(self.n_qubits):
+                # check if the parameters are real
+                if reshaped_params[r, i] != reshaped_params[r, i].real:
+                    raise ValueError(f'Parameter {[r,i]} is not real.')
                 self.qubits.Rx(reshaped_params[r, i], i)
                 self.qubits.Ry(reshaped_params[r, i + self.n_qubits], i)
+        
+        for r in range(self.reps):
+            for i in range(self.n_qubits):
                 if i != self.n_qubits - 1:
                     self.qubits.CNOT(i, i+1)
-        
 
-        
+        # self.qubits.draw()
 
     def run(self):
         self.qubits.run()

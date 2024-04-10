@@ -78,21 +78,6 @@ two_qubits.SWAP(0, 1)
 ```
 
 
-## NEW IN VERSION 0.3:
-- You must now use Qubits.run() to execute the circuit after applying the gates.
-    
-```python
-qc = Qubits(4)
-qc.H(0)
-```
-
-- Hadamard gates are now called *Qubits.H(i)* in order to be consistent.
-Old:
-```python
-qc.Hadamard(0)
-```
-New:
-```python
-qc.H(0)
-```
+## NEW IN VERSION 0.3.5:
+- VQE now supports non-Hermitian 'Hamiltonian's, but why would you ever need it?
 
