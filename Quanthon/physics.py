@@ -12,3 +12,5 @@ class Hamiltonian:
 
     def __repr__(self) -> str:
         return f'Hamiltonian: 1b {self.one_body_coeffs.shape}, 2b {self.two_body_coeffs.shape}.'
+
+ 

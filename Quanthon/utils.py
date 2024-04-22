@@ -1,6 +1,6 @@
 # Utils
 import numpy as np
-
+from itertools import product
 def get_pauli(basis_name):
     pauli_matrices = {'I': np.eye(2, dtype=np.complex128), 
                       'X': np.array([[0, 1], [1, 0]], dtype=np.complex128), 
@@ -131,6 +131,22 @@ def swap_bits(val, i, j): # https://stackoverflow.com/questions/12173774/how-to-
     return val
 
 
+def get_all_paulis(n):
+    '''
+    args: 
+        n: the number of qubits.
+    
+    return: list of all the possible Pauli strings of length n.
+    '''
+    paulis = 'IXYZ'
+    return [''.join(p) for p in product(paulis, repeat=n)] 
+
+
+def is_hermitian(mat):
+    return np.allclose(mat, mat.T.conj())
+
+def is_unitary(mat):
+    return np.allclose(mat @ mat.T.conj(), np.eye(len(mat)))
 
     
 if __name__ == "__main__":
@@ -180,6 +196,5 @@ if __name__ == "__main__":
         print(f'{flipped_i:0{n}b}')
         if f'{flipped_i:0{n}b}'[-(c+1)] != '0':
             raise Exception('WRONG')
-
 
 
