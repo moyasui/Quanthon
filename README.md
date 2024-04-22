@@ -77,7 +77,15 @@ two_qubits.CONT(0, 1)
 two_qubits.SWAP(0, 1)
 ```
 
+## New in 0.3.6:
+Added pauli_decomposition for matrices of size $2^n \times 2^n$.
 
-## NEW IN VERSION 0.3.5:
-- VQE now supports non-Hermitian 'Hamiltonian's, but why would you ever need it?
+```py
+from Quanthon import pauli_decomposition
+```
+
+## Previous Version Releases
+
+### 0.3.5:
+- VQE now supports non-Hermitian 'Hamiltonians', but why would you ever need it?
 
