@@ -142,18 +142,17 @@ def pauli_decomposition(h_mat):
     
     h_pauli = []
     
-    if is_power_of_two(h_mat.shape[0]):
+    if not is_power_of_two(h_mat.shape[0]):
+        h_mat = expand_h_mat(h_mat)
+        print(h_mat)
         
-        n = int(np.log2(h_mat.shape[0]))
-        all_paulis = get_all_paulis(n)
-        
-        for paulis in all_paulis:
-            coeff = (1/2**n) * np.trace(get_pauli(paulis) @ h_mat)
-            if coeff != 0:
-                h_pauli.append((paulis, coeff))
-
-    else:
-        raise NotImplementedError("Non 2**n Hamiltonian not implemented.")
+    n = int(np.log2(h_mat.shape[0]))
+    all_paulis = get_all_paulis(n)
     
-
+    for paulis in all_paulis:
+        coeff = (1/2**n) * np.trace(get_pauli(paulis) @ h_mat)
+        if coeff != 0:
+            h_pauli.append((paulis, coeff))
+    
+    
     return h_pauli

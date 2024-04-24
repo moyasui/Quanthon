@@ -191,7 +191,6 @@ def _check_health_jw(h_pauli, n):
     return count
     
 
-
 def _simplify_pauli_terms(terms):
 
     '''
@@ -217,4 +216,30 @@ def _simplify_pauli_terms(terms):
 
 def is_power_of_two(n):
     return n > 0 and (2 ** (n.bit_length() - 1)) == n
+
+
+def expand_h_mat(h_mat):
+
+    '''For matrices that are not a power of 2, expand the matrix to the nearest power of 2.
+    
+    args:
+        h_mat: 2d numpy array, the matrix to be expanded.
+
+    return:
+        new_h_mat: 2d numpy array, the expanded matrix to size of smallest power of 2 possible. 
+        The original matrix is at the top left corner.
+    '''
+
+    n = h_mat.shape[0]
+    pow = 1
+    while True:
+        if n <= 2 ** pow:
+           break 
+        pow += 1
+    
+    new_h_mat = np.zeros((2 ** pow, 2 ** pow))
+    new_h_mat[:n, :n] = h_mat
+
+    return new_h_mat
+        
 
