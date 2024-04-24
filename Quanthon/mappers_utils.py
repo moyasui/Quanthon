@@ -181,7 +181,7 @@ def get_tb_3u(n, p, q, r, s, coeff):
     return all_tb_op 
 
 
-def _check_health_jw(h_pauli, n):
+def check_health_jw(h_pauli, n):
     count = 0
     for term in h_pauli:
         if len(term[0]) != n:
@@ -191,7 +191,7 @@ def _check_health_jw(h_pauli, n):
     return count
     
 
-def _simplify_pauli_terms(terms):
+def simplify_pauli_terms(terms):
 
     '''
         Simplify the pauli sums by collecting like terms.

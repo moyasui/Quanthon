@@ -116,10 +116,10 @@ def jordan_wigner(hamiltonian):
                         h_pauli.extend(tb_op)
 
 
-    if _check_health_jw(h_pauli, n):
+    if check_health_jw(h_pauli, n):
         raise ValueError("There are terms whose length is not equal to the number of qubits.")
     
-    h_pauli = _simplify_pauli_terms(h_pauli)
+    h_pauli = simplify_pauli_terms(h_pauli)
     return h_pauli
 
 
