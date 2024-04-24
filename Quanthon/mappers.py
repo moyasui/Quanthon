@@ -144,7 +144,6 @@ def pauli_decomposition(h_mat):
     
     if not is_power_of_two(h_mat.shape[0]):
         h_mat = expand_h_mat(h_mat)
-        print(h_mat)
         
     n = int(np.log2(h_mat.shape[0]))
     all_paulis = get_all_paulis(n)
