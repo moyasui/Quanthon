@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 # testing features
-from Quanthon import VQE, AdaptVQE, jordan_wigner, Hamiltonian, QubitAdaptAnsatz, HardwareEfficietnAnsatz, pauli_sum
+from Quanthon import VQE, AdaptVQE, jordan_wigner, Hamiltonian, QubitAdaptAnsatz, HardwareEfficientAnsatz, pauli_sum
 
 # test tools
 from .test_cmp_qk import qiskit_hardware
@@ -21,7 +21,7 @@ class AlgorithmTest(unittest.TestCase):
                     ("XX", 0.18093119978423156),
                 ]
         
-        ansatz = HardwareEfficietnAnsatz(2, reps=2)
+        ansatz = HardwareEfficientAnsatz(2, reps=2)
 
         rng = np.random.default_rng(826)
         n_params = ansatz.n_params
@@ -96,7 +96,7 @@ class AlgorithmTest(unittest.TestCase):
 
     def my_hardware(self, qubit_op, seed=267):
         n = len(qubit_op[0][0])
-        ansatz = HardwareEfficietnAnsatz(n, reps=1)
+        ansatz = HardwareEfficientAnsatz(n, reps=1)
         rng = np.random.default_rng(seed)
         n_params = ansatz.n_params
         init_points = rng.random(n_params) * 2 * np.pi - np.pi

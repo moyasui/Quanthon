@@ -29,7 +29,7 @@ class Ansatz:
         self.n_params = 2 * n_qubits * reps
 
   
-class HardwareEfficietnAnsatz(Ansatz):
+class HardwareEfficientAnsatz(Ansatz):
 
     def __init__(self, n_qubits, reps=1) -> None:
         super().__init__(n_qubits, reps)

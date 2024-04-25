@@ -27,7 +27,7 @@ class MappersTest(unittest.TestCase):
             print(f"eig_val: {min(eig_val)}")
             eigs[i] = min(eig_val)
             qubit_ops = qt.pauli_decomposition(h)
-            ansatz = qt.HardwareEfficietnAnsatz(3)
+            ansatz = qt.HardwareEfficientAnsatz(3)
             vqe = qt.VQE(ansatz, rng.random(ansatz.n_params) * 2 * np.pi - np.pi)
             min_eig = vqe.minimise_eigenvalue(qubit_ops)[1]
             vqe_eigs[i] = min_eig
