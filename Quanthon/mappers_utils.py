@@ -239,7 +239,9 @@ def expand_h_mat(h_mat):
     
     new_h_mat = np.zeros((2 ** pow, 2 ** pow))
     new_h_mat[:n, :n] = h_mat
-
+    for i in range(n, 2 ** pow):
+        new_h_mat[i, i] = 99
+    # print(new_h_mat)
     return new_h_mat
         
 

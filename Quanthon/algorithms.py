@@ -59,12 +59,17 @@ class VQE():
             
             result = self.minimise(self._objective, 
                                    self.params, 
-                                   method='Powell', 
-                                #    bounds=bounds, 
-                                   options= {"maxiter": 10000})
+                                #    method='Powell',
+                                #    method='Nelder-Mead',
+                                     method='COBYLA',
+                                    #  method='TNC',
+                                   bounds=bounds, 
+                                   options= {"maxiter": 100}
+                                   )
             min_params = result.x
             min_energy = result.fun
             
+            # print(min_params)
             return min_params, min_energy
     
 
