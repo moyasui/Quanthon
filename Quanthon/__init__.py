@@ -5,3 +5,4 @@ from Quanthon.algorithms import VQE, AdaptVQE
 from Quanthon.mappers import jordan_wigner, pauli_decomposition
 from Quanthon.physics import Hamiltonian
 from Quanthon.ansatzs import HardwareEfficientAnsatz, QubitAdaptAnsatz
+from Quanthon.exponential import exponential_pauli

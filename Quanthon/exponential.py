@@ -1,7 +1,8 @@
 import numpy as np
 
 def exponential_pauli(qc, pauli_str, coeff, method='inverted staircase'):
-	"""The exponential of an pauli string, the circuit of qc is updated in place
+	"""The exponential of an pauli string, the circuit of qc is updated in place. 
+	Must be used for at least two qubits.
 	args:
 		qc: Qubits object, the Qubits object the exponential is acting on,
 		pauli_str: str, the Pauli string to exponentiate,
@@ -9,6 +10,9 @@ def exponential_pauli(qc, pauli_str, coeff, method='inverted staircase'):
 		method: str, the method used to exponentiate the pauli string, defaults to 'inverted staircase'.
 		
 	"""
+	if qc.n_qubit < 2:
+		raise ValueError('For the exponential of a single pauli operator, simply use one of the built-in gates Rx, Ry or Rz.')
+	
 	if method == 'staircase':
 		staircase(qc, pauli_str, coeff)
 		
@@ -16,7 +20,7 @@ def exponential_pauli(qc, pauli_str, coeff, method='inverted staircase'):
 		inverted_staircase(qc, pauli_str, coeff)
 
 	elif method == 'fswap':
-		pass
+		raise NotImplementedError("Not implemented.")
 	else:
 		raise ValueError('Invalid method, must be one of "staircase", "inverted staircase", or "fswap".')
 
@@ -41,7 +45,7 @@ def staircase(qc, pauli_str, coeff):
 	# right
 	for i in range(qc.n_qubit - 1, 0, -1):
 		if pauli_str[i] == 'I':
-			qc.SWAP(i-1, i)
+			qc.SWAP(i-1, i)	
 		else:
 			qc.CNOT(i-1, i)
 	
@@ -54,22 +58,22 @@ def staircase(qc, pauli_str, coeff):
 	
 
 def inverted_staircase(qc, pauli_str, coeff):
-
+	
+	
 	# left 
 	for i, p in enumerate(pauli_str):
 		if p == 'Z':
 			qc.H(i)
 		elif p == 'Y':
-			qc.H(i)
 			qc.Rz(-np.pi/2, i)
 
 	for i in range(1, qc.n_qubit):
 		if pauli_str[i] == 'I':
-			qc.SWAP(i, i-1)
+			qc.SWAP(i-1, i)
 		else:
 			qc.CNOT(i, i-1)
 
-	# Rz
+	# Rx
 	qc.Rx(2 * coeff, qc.n_qubit - 1)
 
 	# right
@@ -80,34 +84,12 @@ def inverted_staircase(qc, pauli_str, coeff):
 			qc.CNOT(i, i-1)
 	
 	for i, p in enumerate(pauli_str):
-		if p == 'X':
+		if p == 'Z':
 			qc.H(i)
 		elif p == 'Y':
-			qc.H(i)
-			qc.Rz(-np.pi/2, i)
+			qc.Rz(np.pi/2, i)
 
-if __name__ == '__main__':
 
-	from Quanthon import Qubits
-	from Quanthon.base import Gate
-	from Quanthon.utils import get_pauli
-	from scipy.linalg import expm
-
-	n = 1
-	qc = Qubits(n)
-	pauli_str = 'Y'
-
-	a = 0.5
-	coeff = -1j * a
-	exponential_pauli(qc, pauli_str, a, method='staircase')
-	qc.run()
-	print(qc)
-
-	qc = Qubits(n)
-	qc.reset_circuit()
-	qc.circuit.append(Gate(f'exp({pauli_str})', expm(coeff * get_pauli(pauli_str)), n_qubits=qc.n_qubit))
-	qc.run()
-	print(qc)
 
 
 

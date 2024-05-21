@@ -5,6 +5,8 @@ from Quanthon import Hamiltonian, jordan_wigner
 import numpy as np
 
 
+
+
 class QuanthonTest(unittest.TestCase):
 
     def test_Hamiltonian(self):
@@ -180,6 +182,38 @@ class QuanthonTest(unittest.TestCase):
 
         print("exact3: ", re, "expectation3: ", ee)
 
+    def test_exp(self):
+        
+        from Quanthon import Qubits, exponential_pauli
+        from Quanthon.base import Gate
+        from Quanthon.utils import get_pauli
+        from scipy.linalg import expm
+
+        n = 2
+        
+        pauli_str = 'YX'
+
+        a = 0.5
+        coeff = -1j * a
+
+        # with staircase algorithm
+        qc = Qubits(n)
+        exponential_pauli(qc, pauli_str, a, method='staircase')
+        qc.run()
+        print("staircase", qc)
+
+        # with inverted staircase algorithm
+        qc = Qubits(n)
+        exponential_pauli(qc, pauli_str, a, method='inverted staircase')
+        qc.run()
+        print("inverted", qc)
+
+        # with scipy.linalg.expm
+        qc = Qubits(n)
+        qc.reset_circuit()
+        qc.circuit.append(Gate(f'exp({pauli_str})', expm(coeff * get_pauli(pauli_str)), n_qubits=qc.n_qubit))
+        qc.run()
+        print("scipy", qc)
 
 if __name__ == '__main__':
     unittest.main()
