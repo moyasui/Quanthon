@@ -1,10 +1,8 @@
 '''The basic classes for quantum computing. Replaced base.py, which was discontinued after Quanthon 0.3.0'''
 
-# TODO: Add n dimension rotation 
-
 import numpy as np
 from collections import Counter
-from .utils import one_fixed_bit, flip_bit, swap_bits
+from .utils import one_fixed_bit, flip_bit, swap_bits, get_bit, make_op_mat, is_valid_state
 
 # Constants
 rng = np.random.default_rng()
@@ -18,6 +16,7 @@ class Gate:
             name: string, the name of the gate;
             matrix: operator matrix or a function which takes params is an argument and returns the matrix of the correct size;
             n_qubits: int, the number of qubits the gate acts on;
+            targets: the target qubit or qubits the gate acts on.
             '''
         self.name = name
         self.matrix = matrix
@@ -30,16 +29,25 @@ class Gate:
         return f"Gate: {self.name} \n Matrix: \n {self.matrix} \n"
     
     def _check_is_unitary(self, matrix):
-
-        if not np.allclose(matrix @ matrix.conj().T, np.eye(matrix.shape[0])):
-            raise ValueError(f"{self.name} is not unitary.")
+        
+        uudag = matrix @ matrix.conj().T
+        if not np.allclose(uudag, np.eye(matrix.shape[0]), rtol=1e-4):
+            raise ValueError(f"{self.name} is not unitary, matrix UU+: {uudag}.")
     
     def act(self, state, param=None):
         if param is not None:
             self._check_is_unitary(self.matrix(param))
-            return self.matrix(param) @ state
-        self._check_is_unitary(self.matrix)
-        return self.matrix @ state
+            result = self.matrix(param) @ state
+        
+        else:
+            self._check_is_unitary(self.matrix)
+            result = self.matrix @ state
+        
+
+        if is_valid_state(result):
+            return result
+        else:
+            raise ValueError(f"Invalid state. {result} {sum(np.abs(result**2))}")
 
     
 class Qubits:
@@ -48,7 +56,7 @@ class Qubits:
         self.state = np.zeros(2**n, dtype=np.complex_)
         self.state[0] = 1
         self.n_qubit = n
-        self.opeartor_size = 2**n
+        self.operator_size = 2**n
 
         self.I = np.eye(2)
         self.h = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
@@ -77,14 +85,14 @@ class Qubits:
         if gate in ['H', 'X', 'Y', 'Z', 'Sdag']:
             self.gate_history[f'{i}'].append(gate) 
         
-        elif gate.startswith('Rx') or gate.startswith('Ry'):
+        elif gate.startswith('R'):
             self.gate_history[f'{i}'].append(gate)
  
-        elif gate == 'CNOT':
+        elif gate.startswith('CNOT'):
             self.gate_history[f'{i[0]}'].append(gate + f"ctrl{i[1]-i[0]}") 
             self.gate_history[f'{i[1]}'].append(gate + "trgt")
         
-        elif gate == 'SWAP':
+        elif gate.startswith('SWAP'):
             self.gate_history[f'{i[0]}'].append(gate + f"1{i[1]-i[0]}")
             self.gate_history[f'{i[1]}'].append(gate + "2")
 
@@ -102,7 +110,7 @@ class Qubits:
 
     def set_state(self, state):
         assert len(state) == 2**self.n_qubit, f"Invalid state: must have length {2**self.n_qubit}"
-        assert np.isclose(np.linalg.norm(state), 1), "Invalid state: must be normalised."
+        assert np.isclose(np.linalg.norm(state), 1, atol=1e-4), "Invalid state: must be normalised."
         self.state = state
 
     def reset_state(self):
@@ -141,71 +149,85 @@ class Qubits:
 
         # Return the computational basis notation
         return computational_str
-    
-    def _make_op_mat(self, op, indx): 
-        ''' Operates the qubit with the given operator and index. '''
-        result = np.eye(2**indx)
-        result = np.kron(result, op)
-        # print(op)
-        # rest_of_indices = int(self.n_qubit - indx - np.sqrt(len(op)))
-        rest_of_indices = int(self.n_qubit - indx - np.log2(len(op)))
-        for _ in range(rest_of_indices):
-            result = np.kron(result, np.eye(2))
-        
-        return result
-        # self.state = result @ self.state
 
     def H(self,i):
         # self.operate(self.h,i)
-        matrix = self._make_op_mat(self.h, i)
-        self.circuit.append(Gate('H', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, self.h, i)
+        self.circuit.append(Gate(f'H_{i}', matrix, self.n_qubit))
         self._update_gate_history('H', i)
     
     def X(self,i):
         # self.operate(self.x, i)
-        matrix = self._make_op_mat(self.x, i)
-        self.circuit.append(Gate('X', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, self.x, i)
+        self.circuit.append(Gate(f'X_{i}', matrix, self.n_qubit))
         self._update_gate_history('X', i)
 
     def Y(self,i):
         # self.operate(self.y, i)
-        matrix = self._make_op_mat(self.y, i)
-        self.circuit.append(Gate('Y', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, self.y, i)
+        self.circuit.append(Gate(f'Y_{i}', matrix, self.n_qubit))
         self._update_gate_history('Y', i)
 
     def Z(self,i):
         # self.operate(self.z, i)
-        matrix = self._make_op_mat(self.z, i)
-        self.circuit.append(Gate('Z', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, self.z, i)
+        self.circuit.append(Gate(f'Z_{i}', matrix, self.n_qubit))
         self._update_gate_history('Z', i)
     
     def Sdag(self,i):
         # self.operate(self.s.conj(), i)
-        matrix = self._make_op_mat(self.s.conj(), i)
-        self.circuit.append(Gate('Sdag', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, self.s.conj(), i)
+        self.circuit.append(Gate(f'Sdag_{i}', matrix, self.n_qubit))
         self._update_gate_history('Sdag', i)
 
     def Rx(self, theta, i):
 
         rx = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
-        # self.operate(Rx, i) 
-        matrix = self._make_op_mat(rx, i)
-        self.circuit.append(Gate('Rx', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, rx, i)
+        self.circuit.append(Gate(f'Rx_{theta}_{i}', matrix, self.n_qubit))
         self._update_gate_history(f'Rx_{theta}', i)
 
     def Ry(self, phi, i):
         ry = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.y
-        # self.operate(Ry, i)
-        matrix = self._make_op_mat(ry, i)
-        self.circuit.append(Gate('Ry', matrix, self.n_qubit))
+        matrix = make_op_mat(self.n_qubit, ry, i)
+        self.circuit.append(Gate(f'Ry_{phi}_{i}', matrix, self.n_qubit))
         self._update_gate_history(f'Ry_{phi}', i)
+
+    def Rz(self, theta, i):
+        rz = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.z
+        matrix = make_op_mat(self.n_qubit, rz, i)
+        self.circuit.append(Gate(f'Rz_{theta}_{i}', matrix, self.n_qubit))
+        self._update_gate_history(f'Rz_{theta}', i)
+
+    def controlled_U1(self, op, control, target):
+        '''
+        Apply the two-qubit controlled gate. Control before target. '''
+        if self.n_qubit == 1:
+            raise ValueError("The CNOT gate can not be applied to a single qubit.")
+
+        active_op_size = np.log2(op.shape[0])
+        matrix = np.eye(self.operator_size)
+        indices = one_fixed_bit(self.n_qubit, self.n_qubit - control - 1, is_decimal=True) # we do n-c cuz our 0th bit is on the left
+        
+        # if the target is 0
+        for i in indices:
+            if get_bit(i, self.n_qubit - target - 1) == 0:
+                matrix[i, i] = 0
+                matrix[i, i] = 1
+
+        # I 0
+        # 0 U
+
+        # U 0
+        # 0 I
+
 
     def CNOT(self, control, target):
 
         if self.n_qubit == 1:
             raise ValueError("The CNOT gate can not be applied to a single qubit.")
         
-        matrix = np.eye(self.opeartor_size)
+        matrix = np.eye(self.operator_size)
 
         indices = one_fixed_bit(self.n_qubit, self.n_qubit - control - 1, is_decimal=True) # we do n-c cuz our 0th bit is on the left
 
@@ -217,7 +239,7 @@ class Qubits:
             matrix[f, i] = 1
             matrix[i, f] = 1
 
-        self.circuit.append(Gate('CNOT', matrix, self.n_qubit))
+        self.circuit.append(Gate(f'CNOT{control}{target}', matrix, self.n_qubit))
         # self.state = matrix @ self.state
         self._update_gate_history("CNOT", (control, target))
 
@@ -227,22 +249,24 @@ class Qubits:
             raise ValueError("The SWAP gate can not be applied to a single qubit.")
         
 
-        matrix = np.zeros((self.opeartor_size, self.opeartor_size))
-        for i in range(self.opeartor_size):
+        matrix = np.zeros((self.operator_size, self.operator_size))
+        for i in range(self.operator_size):
             j = swap_bits(i, self.n_qubit - qubit1 - 1, self.n_qubit - qubit2 - 1)
             matrix[i, j] = 1
             matrix[j, i] = 1
 
         # self.state = matrix @ self.state
-        self.circuit.append(Gate('SWAP', matrix, self.n_qubit))
+        self.circuit.append(Gate(f'SWAP{qubit1}{qubit2}', matrix, self.n_qubit))
         self._update_gate_history("SWAP", (qubit1, qubit2))
     
     def run(self):
         
-        '''Execute the circuit. Return the result.'''
+        '''
+        Execute the circuit. Return the result.
+        '''
         for gate in self.circuit:
             self.state = gate.act(self.state)
-        
+         
     def run_and_reset(self):
         '''Execute the circuit and reset the circuit. Return the result.'''
         self.run()
@@ -252,20 +276,31 @@ class Qubits:
 
     def prob(self):
         prob = np.abs(self.state**2)
+        
         return prob
 
     def measure(self, n_shots=1):
         ''' n: number of shots 
             indexs: the index of the qubit(s) being measured '''
         
+        self.atol = 1/n_shots
+        
         prob = self.prob()
         allowed_outcomes = np.arange(len(self.state))
         # print(self.state)
-        outcomes = np.random.choice(allowed_outcomes, p=prob, size = n_shots)
+        try:
+            outcomes = np.random.choice(allowed_outcomes, p=prob, size = n_shots)
+        except ValueError:
+            if np.isclose(np.sum(prob), 1, atol=self.atol):
+                new_prob = prob / np.sum(prob)
+                outcomes = np.random.choice(allowed_outcomes, p=new_prob, size = n_shots) 
+            else:
+                raise ValueError(f"Prob: {prob}, {np.sum(prob)}.")
         
         self.state = np.zeros_like(self.state)
         self.state[outcomes[-1]] = 1
         counts = Counter(outcomes)
+
         
         outcomes_count = np.zeros((len(self.state),2)) # 2: state and count
         for i in range(len(self.state)):

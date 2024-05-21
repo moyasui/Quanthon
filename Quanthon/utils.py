@@ -1,6 +1,18 @@
 # Utils
 import numpy as np
 from itertools import product
+
+def make_op_mat(n, op, indx): 
+    ''' Operates the qubit with the given operator and index. '''
+    result = np.eye(2**indx) # everything upto index
+    result = np.kron(result, op) # the operator on the index
+    
+    rest_of_indices = int(n - indx - np.log2(len(op)))
+    for _ in range(rest_of_indices):
+        result = np.kron(result, np.eye(2))
+    
+    return result
+
 def get_pauli(basis_name):
     pauli_matrices = {'I': np.eye(2, dtype=np.complex128), 
                       'X': np.array([[0, 1], [1, 0]], dtype=np.complex128), 
@@ -89,7 +101,8 @@ def one_fixed_bit(n,c,is_decimal=False):
         c: the index of the bit to be fixed to 1
         
     return:
-        combinations: string, list of all the bit stirngs of length n whose cth bit is 1.
+        combinations: list, list of all the bit strings of length n whose cth bit is 1. if is_decimal 
+        is set to true than returns the decimal representations.
     
     N.B. 
         to convert to int, specify int(bit_sting, 2) for binary input.'''
@@ -130,6 +143,9 @@ def swap_bits(val, i, j): # https://stackoverflow.com/questions/12173774/how-to-
 
     return val
 
+def get_bit(i, n):
+    '''return the nth bit of integer i'''
+    return (i >> n) & 1
 
 def get_all_paulis(n):
     '''
@@ -143,11 +159,14 @@ def get_all_paulis(n):
 
 
 def is_hermitian(mat):
-    return np.allclose(mat, mat.T.conj())
+    return np.allclose(mat, mat.T.conj(), rtol=1e-4)
 
 def is_unitary(mat):
-    return np.allclose(mat @ mat.T.conj(), np.eye(len(mat)))
+    return np.allclose(mat @ mat.T.conj(), np.eye(len(mat)), rtol=1e-4)
 
+def is_valid_state(state):
+    # print(state)
+    return np.isclose(sum(np.abs((state**2))), 1, rtol=1e-4)
     
 if __name__ == "__main__":
     # Test Pauli operators
@@ -196,5 +215,4 @@ if __name__ == "__main__":
         print(f'{flipped_i:0{n}b}')
         if f'{flipped_i:0{n}b}'[-(c+1)] != '0':
             raise Exception('WRONG')
-
 

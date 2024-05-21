@@ -31,6 +31,7 @@ class QuanthonTest(unittest.TestCase):
         # print(q2)
         q2.H(0)
         q2.CNOT(0,1)
+        q2.run()
         # print(q2)
 
         print("Testing `Qubits`")

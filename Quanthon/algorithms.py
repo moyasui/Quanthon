@@ -8,6 +8,7 @@ import warnings
 from .expectation import cal_expectation
 from .utils import pauli_sum
 from .base import Qubits
+from .history import AdaptHistory
 
 class VQE():
         def __init__(self, ansatz, init_points, optimiser=minimize):
@@ -41,14 +42,15 @@ class VQE():
             # energy = self.ansatz.qubits.state.conj().T @ self.H_mat @ self.ansatz.qubits.state
             return energy
 
-        def minimise_eigenvalue(self, H_pauli_str, num_shots=10000):
+        def minimise_eigenvalue(self, H_pauli_str, num_shots=10000, method='powell'):
             '''
             Rotates the parametrised circuit to find the minimised energy using classical 
             minimisation algorithms.
-            Inputs:
-            H_pauli_str: the Hamiltonian of the system in transformed in terms of Pauli strings,
-            num_shots: (int) number of shots,
-            return: (float) minimised energy eigenvalues.'''
+            args:
+                H_pauli_str: the Hamiltonian of the system in transformed in terms of Pauli strings,
+                num_shots: (int) number of shots,
+
+            return: (tuple) optimal parameters, minimised energy eigenvalues.'''
             self.H = H_pauli_str
 
             self.num_shots = num_shots
@@ -57,11 +59,15 @@ class VQE():
             ub = np.pi * np.ones(len(self.params))
             bounds = Bounds(lb, ub)
             
+            if method == 'powell':
+                bounds = None
+            
             result = self.minimise(self._objective, 
                                    self.params, 
+                                   method=method,
                                 #    method='Powell',
                                 #    method='Nelder-Mead',
-                                     method='COBYLA',
+                                    #  method='COBYLA',
                                     #  method='TNC',
                                    bounds=bounds, 
                                    options= {"maxiter": 100}
@@ -91,6 +97,8 @@ class AdaptVQE():
         self.expectation = cal_expectation
 
         self.minimise = optimiser
+        self.estimate_energy = estimate_energy
+        self.hist = AdaptHistory()
         
     
     def gradient(self, A):
@@ -119,7 +127,8 @@ class AdaptVQE():
                 True if largest gradient is < eps and a new operator is added, False otherwise.
         '''
 
-        op_cand = self.ansatz.pool[0]
+        rng = np.random.default_rng(4418)
+        op_cand = rng.choice(self.ansatz.pool, 1).tolist()[0]
         max_abs_grad = 0
 
         # print(op_cand)
@@ -135,15 +144,20 @@ class AdaptVQE():
                 op_cand = op
                 max_abs_grad = abs_grad
         
+        
         if max_abs_grad < eps:
             print(f"end of adapt, grad = {max_abs_grad}")
-            return False # gradient = 0, end of adapt 
-        
-        # print(f"appendding, op: {op_cand}, grad: {max_abs_grad}")
+            return False # gradient = 0, end of adapt  
+        # print(f"appending, op: {op_cand}, grad: {max_abs_grad}")
         # grow the ansatz
         # self.old_gates.append(op_cand) # type(op_cand) == str
+        print("max_abs_grad: ", max_abs_grad)
         self.params = np.append(self.params, 0)
         self.ansatz.append_op(op_cand)
+
+        self.hist.update_grad(max_abs_grad)
+        self.hist.update_operators(op_cand)
+        
 
         return True
     
@@ -153,11 +167,14 @@ class AdaptVQE():
         qc = Qubits(self.ansatz.qubits.n_qubit)
         qc.set_state(state)
 
-        energy = self.expectation(qc, self.H_str, self.num_shots)
-        # energy = state.conj().T @ self.H_mat @ state
+        if self.estimate_energy:
+            energy = self.expectation(qc, self.H_str, self.num_shots)
+        else:
+            energy = state.conj().T @ self.H_mat @ state
+
         return energy
     
-    def run_adapt_circuit(self, H, num_shots=10000, max_iter=100, grad_eps=1e-4):
+    def run_adapt_circuit(self, H, num_shots=10000, max_iter=100, grad_eps=1e-4, method='COBYLA'):
         '''
         args:
             H: list of 2-tuple such as [('II', 0.5)]
@@ -174,27 +191,92 @@ class AdaptVQE():
             # need to update the state too
             # print(self.ansatz.qubits)
             # self.ansatz.run(self.params) # ??????
-            old_params, energy = self.minimise_eigenvalue(num_shots) # state is not updated here
+            old_params, energy = self.minimise_eigenvalue(num_shots, method=method) # state is not updated here
             self.params = old_params
             print(f"i: {i}, min_energy = {energy}")
-            
+            self.hist.update_energies(energy)
 
             if not self._append_operator(eps=grad_eps): # new parameter is added here 
                 break
             
+        if i == max_iter - 1:
+            print("Maximum adapt iteration reached, energy did not converge.")
+            # warnings.warn('Adapt circuit did not converge.')
         self.ansatz.run(self.params) # update the state with the final parameters
         return self.ansatz, energy
     
 
-    def minimise_eigenvalue(self, num_shots=10000):
+    def minimise_eigenvalue(self, num_shots=10000, method='SLSQP'):
 
+
+        '''
+            Rotates the parametrised circuit to find the minimised energy using classical 
+            minimisation algorithms.
+            args:
+                H_pauli_str: the Hamiltonian of the system in transformed in terms of Pauli strings,
+                num_shots: (int) number of shots,
+
+            return: (tuple) optimal parameters, minimised energy eigenvalues.
+        '''
         self.num_shots = num_shots
         
         # print(self.params)
-        result = self.minimise(self._objective, self.params, method='Powell', options= {"maxiter": 100000})
-        min_params = result.x
+
+        lb = -np.pi * np.ones(len(self.params))
+        ub = np.pi * np.ones(len(self.params))
+        bounds = Bounds(lb, ub)
+
+        # old_energy = self._objective(self.params)
+        # min_energy = old_energy
+
+        if self.params.size == 0:
+            result = self.minimise(self._objective, 
+                                0, 
+                                method=method, 
+                                #    bounds=bounds,
+                                options= {"maxiter": 100000}
+                                )
+        else:
+            result = self.minimise(self._objective, 
+                                self.params, 
+                                method=method, 
+                                #    bounds=bounds,
+                                options= {"maxiter": 100000}
+                                )
+
         min_energy = result.fun
+        min_params = result.x
+
+        old_energy = self._objective(self.params)
+        print(f"old energy: {old_energy}")
+        print(f"min_energy: {min_energy}")
+        if old_energy < min_energy:
+            warnings.warn("New energy is higher than the old energy.")
 
         # self.ansatz.run(min_params) # update the state using only the optimal parameters
          
         return min_params, min_energy
+
+
+def qft(qubits, is_inverse=False, is_swap=True):
+
+    def nth_root_of_unity(self, n):
+        return 2j * n * np.pi / (2 ** self.qubits.n_qubit)
+    
+    if is_inverse:
+        for i in range(qubits.n_qubit):
+            for j in range(i):
+                qubits.cp(-np.pi / 2 ** (i - j), j, i)
+            qubits.H(i)
+    else:
+        for i in range(qubits.n_qubit):
+            qubits.H(i)
+            for j in range(i+1, qubits.n_qubit):
+                qubits.CP(nth_root_of_unity(j), j, i) # phi, controlled, target
+    
+    if is_swap:
+        for i in range(qubits.n_qubit/2):
+            qubits.SWAP(i, qubits.n_qubits-1) 
+
+def qpe():
+    raise NotImplementedError("Quantum Phase Estimation is not implemented yet.")
