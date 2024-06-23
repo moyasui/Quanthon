@@ -4,7 +4,7 @@ class AdaptHistory:
     def __init__(self) -> None:
         self.min_energies = []
         self.operators_appended = []
-        self.max_grad = []
+        self.max_grads = []
 
     def update_energies(self, energy):
         self.min_energies.append(energy)
@@ -13,7 +13,7 @@ class AdaptHistory:
         self.operators_appended.append(operator)
     
     def update_grad(self, grad):
-        self.max_grad.append(grad)
+        self.max_grads.append(grad)
 
 
     

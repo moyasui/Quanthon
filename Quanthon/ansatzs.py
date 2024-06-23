@@ -18,26 +18,32 @@ from scipy.linalg import expm
 
 from .base import Qubits, Gate
 from .utils import pauli_sum
+from .exponential import exponential_pauli
 
 class Ansatz:
 
 	'''Should work for any type of ansatz that are not evolving, do not use on its own.'''
-	def __init__(self, n_qubits, reps=1) -> None:
+	def __init__(self, n_qubits, n_params, reps=1) -> None:
 
 		self.n_qubits = n_qubits
 		self.reps = reps
-		self.n_params = 2 * n_qubits * reps
+		self.n_params = n_params
 
-  
+	def run(self):
+		self.qubits.run()
+		
 class HardwareEfficientAnsatz(Ansatz):
 
 	def __init__(self, n_qubits, reps=1) -> None:
-		super().__init__(n_qubits, reps)
+		super().__init__(n_qubits, 2 * n_qubits * reps, reps)
 
 
-	def create_circuit(self, init_params):
+	def create_circuit(self, init_params, init_state=None):
 		
+
 		self.qubits = Qubits(self.n_qubits)
+		if init_state is not None:
+			self.qubits.set_state(init_state)
 		if len(init_params) != self.n_params:
 			raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
 		
@@ -46,8 +52,8 @@ class HardwareEfficientAnsatz(Ansatz):
 		for r in range(self.reps):
 			for i in range(self.n_qubits):
 				# check if the parameters are real
-				if reshaped_params[r, i] != reshaped_params[r, i].real:
-					raise ValueError(f'Parameter {[r,i]} is not real.')
+				# if reshaped_params[r, i] != reshaped_params[r, i].real:
+				# 	raise ValueError(f'Parameter {[r,i]} is not real.')
 				self.qubits.Rx(reshaped_params[r, i], i)
 				self.qubits.Ry(reshaped_params[r, i + self.n_qubits], i)
 		
@@ -57,10 +63,33 @@ class HardwareEfficientAnsatz(Ansatz):
 					self.qubits.CNOT(i, i+1)
 
 		# self.qubits.draw()
+		
+class RyAnsatz(Ansatz):
+		
+		def __init__(self, n_qubits, reps=1) -> None:
+			super().__init__(n_qubits, n_qubits*reps, reps)
+		
+		def create_circuit(self, init_params, init_state=None):
 
-	def run(self):
-		self.qubits.run()
-	
+			if init_state is not None:
+				self.qubits.set_state(init_state)
+			
+			self.qubits = Qubits(self.n_qubits)
+			if len(init_params) != self.n_params:
+				raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
+			
+			reshaped_params = init_params.reshape(self.reps, self.n_qubits)
+			
+			for r in range(self.reps):
+				for i in range(self.n_qubits):
+					self.qubits.Ry(reshaped_params[r, i], i)
+
+			for r in range(self.reps):
+				for i in range(self.n_qubits):
+					if i != self.n_qubits - 1:
+						self.qubits.CNOT(i, i+1)
+			# self.qubits.draw()
+			
 
 
 class QubitAdaptAnsatz:
@@ -80,7 +109,7 @@ class QubitAdaptAnsatz:
 			# initial state not sepcified, initialise randomly
 			# init_state = np.random.rand(2**n_qubits) + 1j * np.random.rand(2**n_qubits)
 			init_state = np.ones(2**n_qubits)
-			init_state = init_state / np.linalg.norm(init_state) 
+			init_state = init_state / np.linalg.norm(init_state)
 		
 		self.init_state = init_state
 		self.qubits.set_state(init_state)
@@ -95,7 +124,7 @@ class QubitAdaptAnsatz:
 			self.pool = self.create_complete_G_pool(n_qubits)
 		
 		else:
-			self.pool = pool # custom pool, doens't have to be complete
+			self.pool = pool # custom pool, doesn't have to be complete
 			
 		
 
@@ -179,7 +208,7 @@ class QubitAdaptAnsatz:
 			ops.append('i' + ''.join(yz_op))
 		return ops
 
-	def append_op(self, op):
+	def append_op(self, op, decompose_exp, decompose_method, print_log=False):
 
 		'''
 		op: string, representing one of the operators in the pool
@@ -187,36 +216,51 @@ class QubitAdaptAnsatz:
 		'''
 		# no longer need to append all the gates since they are now saved
 
-		qprint(f"append_op op: {op}")
-		op_mat = pauli_sum([(op.strip('i'), 1j)])
+		if print_log:
+			qprint(f"append_op op: {op}")
 
-		def parametrised_mat(param, op_mat):
-			return expm(param * op_mat)
-		
-		# self.params.append(0) # the corresponding parameter for the gate, initialised to 0.
-		
-		adapt_gate = Gate(f'exp({op})', matrix=lambda param: parametrised_mat(param, op_mat), n_qubits=self.qubits.n_qubit)
-		self.qubits.circuit.append(adapt_gate)
-		
+		if decompose_exp:
+			exponential_pauli(self.qubits, op.strip('i'), coeff=None, method=decompose_method)
+			if print_log:
+				qprint(f"len circuit: {len(self.qubits.circuit)}")
+		else:	
+			op_mat = pauli_sum([(op.strip('i'), 1j)])
+			def parametrised_mat(param, op_mat):
+				return expm(-0.5*param * op_mat)
+			
+			adapt_gate = Gate(f'exp({op})', matrix=lambda param: parametrised_mat(param, op_mat), n_qubits=self.qubits.n_qubit, is_parametrised=True)
+			self.qubits.circuit.append(adapt_gate)
+			
 	
 	def run(self, params):
-		for i, gate in enumerate(self.qubits.circuit):
+		param_indx = 0
+		for gate in self.qubits.circuit:
 			# print(gate.matrix(params[i]))
-			self.qubits.state = gate.act(self.qubits.state, params[i])
+			if gate.is_parametrised:
+
+				self.qubits.state = gate.act(self.qubits.state, params[param_indx])
+				param_indx += 1
+			else:
+				self.qubits.state = gate.act(self.qubits.state)
 		
 		# print(self.qubits.circuit)
 	
 	def run_without_update(self, params):
 		'''Run the circuit without updating the state.'''
-		old_state = self.qubits.state
-		for i, gate in enumerate(self.qubits.circuit):
-			self.qubits.state = gate.act(self.qubits.state, params[i])
-			if not np.isclose(np.linalg.norm(self.qubits.state), 1, atol=1e-4):
+		state = self.qubits.state
+		param_indx = 0
+
+		for gate in self.qubits.circuit:
+			if gate.is_parametrised:
+				state = gate.act(state, params[param_indx])
+				param_indx += 1
+			else:
+				state = gate.act(state)
+			
+			if not np.isclose(np.linalg.norm(state), 1, atol=1e-4):
 				raise ValueError(f"Probability does not sum to unity, prob: {self.qubits.prob}, state: {self.qubits.state}.")
 		
-		new_state = self.qubits.state
-		self.qubits.state = old_state # return to the new state while returning the result of the circuit
-		return new_state
+		return state
 
 
 

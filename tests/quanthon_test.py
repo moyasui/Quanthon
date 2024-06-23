@@ -182,7 +182,7 @@ class QuanthonTest(unittest.TestCase):
 
         print("exact3: ", re, "expectation3: ", ee)
 
-    def test_exp(self):
+    def test_exponential(self):
         
         from Quanthon import Qubits, exponential_pauli
         from Quanthon.base import Gate
@@ -199,11 +199,15 @@ class QuanthonTest(unittest.TestCase):
         # with staircase algorithm
         qc = Qubits(n)
         exponential_pauli(qc, pauli_str, a, method='staircase')
+        exponential_pauli(qc, pauli_str, a, method='staircase')
+        exponential_pauli(qc, pauli_str, a, method='staircase')
         qc.run()
         print("staircase", qc)
 
         # with inverted staircase algorithm
         qc = Qubits(n)
+        exponential_pauli(qc, pauli_str, a, method='inverted staircase')
+        exponential_pauli(qc, pauli_str, a, method='inverted staircase')
         exponential_pauli(qc, pauli_str, a, method='inverted staircase')
         qc.run()
         print("inverted", qc)
@@ -211,6 +215,8 @@ class QuanthonTest(unittest.TestCase):
         # with scipy.linalg.expm
         qc = Qubits(n)
         qc.reset_circuit()
+        qc.circuit.append(Gate(f'exp({pauli_str})', expm(coeff * get_pauli(pauli_str)), n_qubits=qc.n_qubit))
+        qc.circuit.append(Gate(f'exp({pauli_str})', expm(coeff * get_pauli(pauli_str)), n_qubits=qc.n_qubit))
         qc.circuit.append(Gate(f'exp({pauli_str})', expm(coeff * get_pauli(pauli_str)), n_qubits=qc.n_qubit))
         qc.run()
         print("scipy", qc)

@@ -15,7 +15,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
     
 #### VERSION HERE #####
-version = "0.3.7.19" #####
+version = "0.3.7.20" #####
 #######################    
 
 setup(
@@ -44,5 +44,5 @@ setup(
     ],
     packages=["Quanthon"],
     include_package_data=True,
-    install_requires=["numpy"]
+    install_requires=["numpy", "scipy"]
 )

@@ -10,7 +10,7 @@ rangle = '\u27E9'
 
 class Gate:
 
-    def __init__(self, name, matrix, n_qubits):
+    def __init__(self, name, matrix, n_qubits, is_parametrised=False):
         '''
         args:
             name: string, the name of the gate;
@@ -22,6 +22,7 @@ class Gate:
         self.matrix = matrix
 
         self.n_qubits = n_qubits
+        self.is_parametrised = is_parametrised
         # self.params = params
 
 
@@ -31,11 +32,13 @@ class Gate:
     def _check_is_unitary(self, matrix):
         
         uudag = matrix @ matrix.conj().T
-        if not np.allclose(uudag, np.eye(matrix.shape[0]), rtol=1e-4):
+        if not np.allclose(uudag, np.eye(matrix.shape[0]), atol=1e-4):
             raise ValueError(f"{self.name} is not unitary, matrix UU+: {uudag}.")
     
     def act(self, state, param=None):
-        if param is not None:
+
+        if self.is_parametrised:
+            assert param is not None
             self._check_is_unitary(self.matrix(param))
             result = self.matrix(param) @ state
         
@@ -45,6 +48,7 @@ class Gate:
         
 
         if is_valid_state(result):
+            result /= np.linalg.norm(result)
             return result
         else:
             raise ValueError(f"Invalid state. {result} {sum(np.abs(result**2))}")
@@ -53,17 +57,17 @@ class Gate:
 class Qubits:
 
     def __init__(self,n):
-        self.state = np.zeros(2**n, dtype=np.complex_)
+        self.state = np.zeros(2**n, dtype=np.complex128)
         self.state[0] = 1
         self.n_qubit = n
         self.operator_size = 2**n
 
         self.I = np.eye(2)
-        self.h = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        self.x = np.array([[0, 1], [1, 0]])
-        self.y = np.array([[0, -1j], [1j, 0]])
-        self.z = np.array([[1, 0], [0, -1]])
-        self.s = np.array([[1, 0], [0, 1j]])
+        self.h = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]], dtype=np.complex128)
+        self.x = np.array([[0, 1], [1, 0]],dtype=np.complex128)
+        self.y = np.array([[0, -1j], [1j, 0]], dtype=np.complex128)
+        self.z = np.array([[1, 0], [0, -1]], dtype=np.complex128)
+        self.s = np.array([[1, 0], [0, 1j]], dtype=np.complex128)
 
         self.circuit = []
 
@@ -149,6 +153,12 @@ class Qubits:
 
         # Return the computational basis notation
         return computational_str
+    
+    def count_gates(self):
+        return len(self.circuit)
+    
+    def count_cnots(self):
+        return sum([1 for gate in self.circuit if gate.name.startswith('CNOT')])
 
     def H(self,i):
         # self.operate(self.h,i)
@@ -182,46 +192,58 @@ class Qubits:
 
     def Rx(self, theta, i):
 
-        rx = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
-        matrix = make_op_mat(self.n_qubit, rx, i)
-        self.circuit.append(Gate(f'Rx_{theta}_{i}', matrix, self.n_qubit))
-        self._update_gate_history(f'Rx_{theta}', i)
+        def rx(theta):
+            return np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.x
+        
+        if theta is None:
+            self.circuit.append(Gate(f'Rx_{i}', 
+                                     lambda param: make_op_mat(self.n_qubit, rx(param), i), 
+                                     self.n_qubit, 
+                                     is_parametrised=True))
+            
+            self._update_gate_history(f'Rx_θ', i)
+        else:
+            matrix = make_op_mat(self.n_qubit, rx(theta), i)
+            self.circuit.append(Gate(f'Rx_{theta}_{i}', matrix, self.n_qubit))
 
-    def Ry(self, phi, i):
-        ry = np.cos(phi/2) * self.I - 1j * np.sin(phi/2) * self.y
-        matrix = make_op_mat(self.n_qubit, ry, i)
-        self.circuit.append(Gate(f'Ry_{phi}_{i}', matrix, self.n_qubit))
-        self._update_gate_history(f'Ry_{phi}', i)
+            self._update_gate_history(f'Rx_{theta}', i)
+
+    def Ry(self, theta, i):
+
+        def ry(theta):
+            return np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.y
+        
+        if theta is None:
+            self.circuit.append(Gate(f'Ry_{i}', 
+                                     lambda param: make_op_mat(self.n_qubit, ry(param), i), 
+                                     self.n_qubit, 
+                                     is_parametrised=True))
+            
+            self._update_gate_history(f'Ry_θ', i)
+        else:
+            matrix = make_op_mat(self.n_qubit, ry(theta), i)
+            self.circuit.append(Gate(f'Ry_{theta}_{i}', matrix, self.n_qubit))
+
+            self._update_gate_history(f'Ry_{theta}', i)
 
     def Rz(self, theta, i):
-        rz = np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.z
-        matrix = make_op_mat(self.n_qubit, rz, i)
-        self.circuit.append(Gate(f'Rz_{theta}_{i}', matrix, self.n_qubit))
-        self._update_gate_history(f'Rz_{theta}', i)
 
-    def controlled_U1(self, op, control, target):
-        '''
-        Apply the two-qubit controlled gate. Control before target. '''
-        if self.n_qubit == 1:
-            raise ValueError("The CNOT gate can not be applied to a single qubit.")
-
-        active_op_size = np.log2(op.shape[0])
-        matrix = np.eye(self.operator_size)
-        indices = one_fixed_bit(self.n_qubit, self.n_qubit - control - 1, is_decimal=True) # we do n-c cuz our 0th bit is on the left
+        def rz(theta):
+            return np.cos(theta/2) * self.I - 1j * np.sin(theta/2) * self.z
         
-        # if the target is 0
-        for i in indices:
-            if get_bit(i, self.n_qubit - target - 1) == 0:
-                matrix[i, i] = 0
-                matrix[i, i] = 1
+        if theta is None:
+            self.circuit.append(Gate(f'Rz_{i}', 
+                                     lambda param: make_op_mat(self.n_qubit, rz(param), i), 
+                                     self.n_qubit, 
+                                     is_parametrised=True))
+            
+            self._update_gate_history(f'Rz_θ', i)
+        else:
+            matrix = make_op_mat(self.n_qubit, rz(theta), i)
+            self.circuit.append(Gate(f'Rz_{theta}_{i}', matrix, self.n_qubit))
 
-        # I 0
-        # 0 U
-
-        # U 0
-        # 0 I
-
-
+            self._update_gate_history(f'Rz_{theta}', i)
+ 
     def CNOT(self, control, target):
 
         if self.n_qubit == 1:
@@ -259,13 +281,22 @@ class Qubits:
         self.circuit.append(Gate(f'SWAP{qubit1}{qubit2}', matrix, self.n_qubit))
         self._update_gate_history("SWAP", (qubit1, qubit2))
     
-    def run(self):
+    def run(self, params=None):
         
         '''
-        Execute the circuit. Return the result.
+        Execute the circuit. 
+        args:
+            params: the parameter to be inserted into the parametrised gates, must be in order of the gates in the circuit
+            
         '''
+        param_indx = 0
         for gate in self.circuit:
-            self.state = gate.act(self.state)
+            if gate.is_parametrised:
+                self.state = gate.act(self.state, params[param_indx])
+                param_indx += 1
+            else:
+                self.state = gate.act(self.state)
+            
          
     def run_and_reset(self):
         '''Execute the circuit and reset the circuit. Return the result.'''
@@ -283,6 +314,7 @@ class Qubits:
         ''' n: number of shots 
             indexs: the index of the qubit(s) being measured '''
         
+        n_shots = int(n_shots)
         self.atol = 1/n_shots
         
         prob = self.prob()
@@ -297,19 +329,20 @@ class Qubits:
             else:
                 raise ValueError(f"Prob: {prob}, {np.sum(prob)}.")
         
+        # collapse to the measurement state
         self.state = np.zeros_like(self.state)
         self.state[outcomes[-1]] = 1
+        
         counts = Counter(outcomes)
 
         
-        outcomes_count = np.zeros((len(self.state),2)) # 2: state and count
+        outcomes_count = np.zeros((len(self.state),2), dtype=object) # 2: state and count
         for i in range(len(self.state)):
             if i in counts:
                 outcomes_count[i] = counts[i], format(i, f"0{self.n_qubit}b")
             else:
                 outcomes_count[i] = 0,format(i, f"0{self.n_qubit}b")
         # count_qubit = Counter(outcomes_count,)
-
         # single_qubit_count = Counter(outcomes_count)
 
         return outcomes_count
@@ -367,7 +400,7 @@ class Qubits:
 
 
 if __name__ == "__main__":
-    qc = Qubits(6)
+    qc = Qubits(2)
     # qc.H(1)
     # qc.H(0)
 
