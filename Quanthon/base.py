@@ -34,7 +34,8 @@ class Gate:
         uudag = matrix @ matrix.conj().T
         if not np.allclose(uudag, np.eye(matrix.shape[0]), atol=1e-4):
             raise ValueError(f"{self.name} is not unitary, matrix UU+: {uudag}.")
-    
+
+
     def act(self, state, param=None):
 
         if self.is_parametrised:
@@ -334,7 +335,6 @@ class Qubits:
         self.state[outcomes[-1]] = 1
         
         counts = Counter(outcomes)
-
         
         outcomes_count = np.zeros((len(self.state),2), dtype=object) # 2: state and count
         for i in range(len(self.state)):

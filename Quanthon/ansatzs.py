@@ -2,15 +2,8 @@
 	Ansatz for VQE calculations. Can grow if needs be. Parametrise the qubits object.
 	parameters are taken as arguments to the circuit at every iteration'''
 
-# TODO: add init_state to HardwareEfficientAnsatz too
-
-# DEBUGGER
-
-def qprint(msg):
-	
-	print("QubitAdaptAnsatz")
-	print(msg)
-
+from .mappers import jordan_wigner
+from .physics import Hamiltonian
 
 import numpy as np
 from scipy.linalg import expm
@@ -19,6 +12,14 @@ from scipy.linalg import expm
 from .base import Qubits, Gate
 from .utils import pauli_sum
 from .exponential import exponential_pauli
+
+# DEBUGGER
+
+def qprint(msg):
+	
+	print("QubitAdaptAnsatz")
+	print(msg)
+
 
 class Ansatz:
 
@@ -66,30 +67,75 @@ class HardwareEfficientAnsatz(Ansatz):
 		
 class RyAnsatz(Ansatz):
 		
-		def __init__(self, n_qubits, reps=1) -> None:
-			super().__init__(n_qubits, n_qubits*reps, reps)
+	def __init__(self, n_qubits, reps=1) -> None:
+		super().__init__(n_qubits, n_qubits*reps, reps)
+	
+	def create_circuit(self, init_params, init_state=None):
+
+		if init_state is not None:
+			self.qubits.set_state(init_state)
 		
-		def create_circuit(self, init_params, init_state=None):
+		self.qubits = Qubits(self.n_qubits)
+		if len(init_params) != self.n_params:
+			raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
+		
+		reshaped_params = init_params.reshape(self.reps, self.n_qubits)
+		
+		for r in range(self.reps):
+			for i in range(self.n_qubits):
+				self.qubits.Ry(reshaped_params[r, i], i)
 
-			if init_state is not None:
-				self.qubits.set_state(init_state)
-			
-			self.qubits = Qubits(self.n_qubits)
-			if len(init_params) != self.n_params:
-				raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
-			
-			reshaped_params = init_params.reshape(self.reps, self.n_qubits)
-			
-			for r in range(self.reps):
-				for i in range(self.n_qubits):
-					self.qubits.Ry(reshaped_params[r, i], i)
-
-			for r in range(self.reps):
-				for i in range(self.n_qubits):
-					if i != self.n_qubits - 1:
-						self.qubits.CNOT(i, i+1)
+		for r in range(self.reps):
+			for i in range(self.n_qubits):
+				if i != self.n_qubits - 1:
+					self.qubits.CNOT(i, i+1)
 			# self.qubits.draw()
 			
+class UCCSDAnsatz(Ansatz):
+
+	def __init__(self, n_qubits, n_params, n_occupied, n_virtual, reps=1,) -> None:
+		super().__init__(n_qubits, n_params, reps)
+		self.n_occupied = n_occupied
+		self.n_virtual = n_virtual
+	
+	def get_singles(self):
+
+		coeffs = np.ones((self.n_occupied, self.n_virtual))
+		tb = np.zeros((self.n_occupied, self.n_virtual, self.n_occupied, self.n_virtual))
+		h = Hamiltonian(coeffs, tb)
+		print(h)
+		singles = jordan_wigner(h)
+		print(singles)
+
+	
+		return singles
+
+	def get_doubles(self):
+
+		coeffs = np.ones((self.n_occupied, self.n_virtual))
+		tb = np.zeros((self.n_occupied, self.n_virtual, self.n_occupied, self.n_virtual))
+		h = Hamiltonian(coeffs, tb)
+		print(h)
+		singles = jordan_wigner(h)
+		print(singles)
+		
+		return doubles
+		
+	def create_circuit(self, init_params, init_state=None):
+		if init_state is not None:
+			self.qubits.set_state(init_state)
+		
+		self.qubits = Qubits(self.n_qubits)
+		if len(init_params) != self.n_params:
+			raise ValueError(f'Initial parameters do not match the number of parameters required for the ansatz: {len(init_params)} != {self.n_params}')
+		
+		reshaped_params = init_params.reshape(self.reps, self.n_qubits)
+		
+		# singles
+
+
+
+
 
 
 class QubitAdaptAnsatz:
@@ -266,10 +312,9 @@ class QubitAdaptAnsatz:
 
 	
 
-		
-
-
 
 	
+
+
 
 
