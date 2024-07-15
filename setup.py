@@ -15,7 +15,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
     
 #### VERSION HERE #####
-version = "0.3.8" #####
+version = "0.4.0" #####
 #######################    
 
 setup(
